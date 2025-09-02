@@ -23,6 +23,10 @@
         .btn-primary:hover {
             background-color: #4b3bc5;
         }
+        .btn-primary:disabled {
+            background-color: #a5b4fc;
+            cursor: not-allowed;
+        }
         .btn-secondary {
             background-color: #e2e8f0;
             color: #475569;
@@ -216,7 +220,7 @@
         // Firebase and App imports
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, addDoc, collection, query, where, getDocs, onSnapshot, updateDoc, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, getDoc, addDoc, collection, query, where, getDocs, onSnapshot, updateDoc, orderBy, serverTimestamp, deleteDoc, increment } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         
         // IMPORTANT: Replace with your Firebase project configuration
         const firebaseConfig = {
@@ -259,7 +263,7 @@
             { name: 'Payouts', icon: '<svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>', view: 'payouts' },
         ];
         const adminNavLinks = [
-            { name: 'Review Queue', icon: '<svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>', view: 'admin-review' },
+            { name: 'All Releases', icon: '<svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>', view: 'admin-releases' },
             { name: 'Manage Users', icon: '<svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M15 21a6 6 0 00-9-5.197M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>', view: 'admin-users' },
         ];
 
@@ -375,7 +379,7 @@
                 mobileAdminNavContainer.classList.remove('hidden');
                 adminNavContainer.innerHTML = adminNavLinks.map((link, i) => createNavLink(link, i)).join('');
                 mobileAdminNavContainer.innerHTML = adminNavLinks.map((link, i) => createNavLink(link, i)).join('');
-                navigateTo('admin-review');
+                navigateTo('admin-releases');
             } else {
                 adminNavContainer.classList.add('hidden');
                 mobileAdminNavContainer.classList.add('hidden');
@@ -398,17 +402,19 @@
             });
         }
         
-        function navigateTo(viewName) {
+        function navigateTo(viewName, id = null) {
             const link = [...userNavLinks, ...adminNavLinks].find(l => l.view === viewName);
             if(link) pageTitle.textContent = link.name;
+            else if (viewName === 'release-details') pageTitle.textContent = 'Release Details';
             
             switch(viewName) {
                 case 'user-dashboard': renderUserDashboard(); break;
                 case 'create-release': renderCreateReleaseForm(); break;
                 case 'my-releases': renderMyReleases(); break;
+                case 'release-details': renderReleaseDetails(id); break; // New case
                 case 'analytics': renderAnalytics(); break;
                 case 'payouts': renderPayouts(); break;
-                case 'admin-review': renderAdminReviewQueue(); break;
+                case 'admin-releases': renderAdminReleases(); break;
                 case 'admin-users': renderAdminUsers(); break;
             }
         }
@@ -430,7 +436,7 @@
         
         async function renderUserDashboard() {
             const userDoc = await getDoc(doc(db, "users", currentUser.uid));
-            const userData = userDoc.data();
+            const userData = userDoc.exists() ? userDoc.data() : { balance: 0 };
             const balance = userData.balance ? userData.balance.toFixed(2) : '0.00';
 
             contentArea.innerHTML = `
@@ -445,28 +451,40 @@
                 </div>
             `;
             
-            const q = query(collection(db, "releases"), where("userId", "==", currentUser.uid));
+            const q = query(collection(db, "releases"), where("userId", "==", currentUser.uid), orderBy("createdAt", "desc"));
             onSnapshot(q, (querySnapshot) => {
-                const releases = [];
-                querySnapshot.forEach((doc) => releases.push({id: doc.id, ...doc.data()}));
-                releases.sort((a, b) => (b.createdAt?.toDate() || 0) - (a.createdAt?.toDate() || 0));
-
-                document.getElementById('total-releases').textContent = releases.length;
-                document.getElementById('live-releases').textContent = releases.filter(r => r.status === 'live').length;
+                const releases = querySnapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
+                
+                if (document.getElementById('total-releases')) {
+                    document.getElementById('total-releases').textContent = releases.length;
+                    document.getElementById('live-releases').textContent = releases.filter(r => r.status === 'delivered').length;
+                }
 
                 let recentHtml = releases.length === 0 ? `<p class="text-gray-500">You haven't created any releases yet. Click 'Create Release' to get started!</p>` : releases.slice(0, 5).map(createReleaseListItem).join('');
-                document.getElementById('recent-releases-list').innerHTML = recentHtml;
+                if (document.getElementById('recent-releases-list')) {
+                    document.getElementById('recent-releases-list').innerHTML = recentHtml;
+                }
             });
         }
         
         function renderCreateReleaseForm() {
+            const dsps = [
+                '24-7', 'Amazon', 'Anghami', 'Audiomack', 'Awa', 'Boomplay', 'Deezer', 
+                'Facebook', 'Flo', 'iHeartRadio', 'iMusica', 'iTunes/Apple Music', 'Joox', 'KKBOX', 
+                'Lickd', 'Mixcloud', 'NetEase', 'Pandora', 'Peloton', 'Resso', 'Rhapsody / Napster', 
+                'Saavn', 'Snap', 'Soundcloud', 'Spotify', 'Tencent', 'Tidal', 'TikTok', 'YouTube Music'
+            ];
+            const eligibleDsps = [
+                'Facebook Fingerprinting', 'YouTube Content ID'
+            ];
+
             contentArea.innerHTML = `
                 <div class="bg-white p-8 rounded-xl shadow-md max-w-4xl mx-auto">
                     <h2 class="text-2xl font-bold text-gray-800 mb-6">Create New Release</h2>
                     <form id="create-release-form">
                         <div class="mb-6">
                             <h3 class="text-lg font-semibold mb-2 text-gray-700">1. Upload Files</h3>
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-1">Audio File (WAV, FLAC, MP3)</label>
                                     <input type="file" id="audio-file" required class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100"/>
@@ -474,8 +492,9 @@
                                 </div>
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-1">Cover Art (3000x3000px, JPG)</label>
-                                    <input type="file" id="artwork-file" required class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100"/>
+                                    <input type="file" id="artwork-file" required accept="image/jpeg" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100"/>
                                     <div id="artwork-upload-progress" class="mt-2 h-2.5 w-full progress-bar hidden"><div class="progress-bar-inner"></div></div>
+                                    <img id="artwork-preview" class="mt-4 rounded-lg w-32 h-32 object-cover hidden" src="#" alt="Artwork Preview" />
                                 </div>
                             </div>
                         </div>
@@ -493,7 +512,9 @@
                         <div class="mb-6 border-t pt-6">
                              <h3 class="text-lg font-semibold mb-4 text-gray-700">3. Select Stores</h3>
                              <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                ${['Spotify', 'Apple Music', 'Amazon Music', 'Tidal', 'Deezer', 'YouTube Music', 'Pandora', 'TikTok'].map(dsp => `<label class="flex items-center space-x-2 border p-3 rounded-lg hover:bg-gray-50"><input type="checkbox" name="stores" value="${dsp}" class="h-4 w-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500" checked><span class="text-sm font-medium text-gray-700">${dsp}</span></label>`).join('')}
+                                ${dsps.map(dsp => `<label class="flex items-center space-x-2 border p-3 rounded-lg hover:bg-gray-50"><input type="checkbox" name="stores" value="${dsp}" class="h-4 w-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500" checked><span class="text-sm font-medium text-gray-700">${dsp}</span></label>`).join('')}
+                                ${eligibleDsps.map(dsp => `<label class="flex items-center space-x-2 border p-3 rounded-lg hover:bg-gray-50"><input type="checkbox" name="stores" value="${dsp}" class="h-4 w-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"><span class="text-sm font-medium text-gray-700">${dsp} <span class="text-xs text-gray-400">(if eligible)</span></span></label>`).join('')}
+                                <label class="flex items-center space-x-2 border p-3 rounded-lg hover:bg-gray-50 col-span-2 md:col-span-4"><input type="checkbox" name="stores" value="450+ other stores" class="h-4 w-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500" checked><span class="text-sm font-medium text-gray-700">Deliver to 450+ other stores</span></label>
                             </div>
                         </div>
                         <div class="flex justify-end mt-8"><button type="submit" class="btn-primary font-bold py-2 px-6 rounded-lg">Submit for Review</button></div>
@@ -501,88 +522,71 @@
                 </div>
             `;
             document.getElementById('create-release-form').addEventListener('submit', handleCreateRelease);
+            document.getElementById('artwork-file').addEventListener('change', (e) => {
+                const preview = document.getElementById('artwork-preview');
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        preview.src = event.target.result;
+                        preview.classList.remove('hidden');
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
         }
-
-        // ============ NEW CODE STARTS HERE ============
-
-        /**
-         * Uploads a file to Cloudinary and updates a progress bar.
-         * @param {File} file - The file to upload.
-         * @param {string} progressElementId - The ID of the progress bar container element.
-         * @returns {Promise<string|null>} The secure URL of the uploaded file or null on error.
-         */
+        
         async function uploadToCloudinary(file, progressElementId) {
             const progressBarContainer = document.getElementById(progressElementId);
             const progressBarInner = progressBarContainer.querySelector('.progress-bar-inner');
             progressBarContainer.classList.remove('hidden');
-
             const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/upload`;
             const formData = new FormData();
             formData.append('file', file);
             formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-
             return new Promise((resolve, reject) => {
                 const xhr = new XMLHttpRequest();
                 xhr.open('POST', url, true);
-                
                 xhr.upload.onprogress = (event) => {
                     if (event.lengthComputable) {
                         const percentComplete = (event.loaded / event.total) * 100;
                         progressBarInner.style.width = `${percentComplete}%`;
                     }
                 };
-                
                 xhr.onload = () => {
                     if (xhr.status === 200) {
                         const response = JSON.parse(xhr.responseText);
-                        progressBarInner.style.backgroundColor = '#22c55e'; // Green on success
+                        progressBarInner.style.backgroundColor = '#22c55e';
                         resolve(response.secure_url);
                     } else {
-                        progressBarInner.style.backgroundColor = '#ef4444'; // Red on error
-                        console.error('Upload failed:', xhr.responseText);
+                        progressBarInner.style.backgroundColor = '#ef4444';
                         reject('Upload failed');
                     }
                 };
-
                 xhr.onerror = () => {
                     progressBarInner.style.backgroundColor = '#ef4444';
-                    console.error('Network error during upload.');
                     reject('Network error');
                 };
-
                 xhr.send(formData);
             });
         }
         
-        /**
-         * Handles the submission of the 'Create Release' form.
-         * Uploads files and saves release data to Firestore.
-         */
         window.handleCreateRelease = async (e) => {
             e.preventDefault();
             showLoading(true);
-
             try {
                 const audioFile = document.getElementById('audio-file').files[0];
                 const artworkFile = document.getElementById('artwork-file').files[0];
-                
                 if (!audioFile || !artworkFile) {
                     showToast('Please select both an audio and artwork file.', 'error');
                     return;
                 }
-                
-                // Upload files in parallel
                 const [audioUrl, artworkUrl] = await Promise.all([
                     uploadToCloudinary(audioFile, 'audio-upload-progress'),
                     uploadToCloudinary(artworkFile, 'artwork-upload-progress')
                 ]);
-
-                if (!audioUrl || !artworkUrl) {
-                     throw new Error('File upload failed. Please try again.');
-                }
-                
+                if (!audioUrl || !artworkUrl) throw new Error('File upload failed. Please try again.');
                 const selectedStores = Array.from(document.querySelectorAll('input[name="stores"]:checked')).map(el => el.value);
-
                 const releaseData = {
                     userId: currentUser.uid,
                     userName: currentUser.displayName,
@@ -595,15 +599,12 @@
                     stores: selectedStores,
                     audioUrl,
                     artworkUrl,
-                    status: 'pending', // Initial status
+                    status: 'pending',
                     createdAt: serverTimestamp()
                 };
-
                 await addDoc(collection(db, "releases"), releaseData);
-                
                 showToast('Release submitted for review successfully!');
                 navigateTo('my-releases');
-
             } catch (error) {
                 console.error("Error creating release:", error);
                 showToast(`Error: ${error.message}`, 'error');
@@ -612,9 +613,6 @@
             }
         };
 
-        /**
-         * Renders the 'My Releases' view for the current user.
-         */
         function renderMyReleases() {
             contentArea.innerHTML = `
                 <div class="bg-white p-6 rounded-xl shadow-md">
@@ -626,54 +624,103 @@
             `;
             const q = query(collection(db, "releases"), where("userId", "==", currentUser.uid), orderBy("createdAt", "desc"));
             onSnapshot(q, (querySnapshot) => {
-                const releases = [];
-                querySnapshot.forEach((doc) => releases.push({id: doc.id, ...doc.data()}));
-                
+                const releases = querySnapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
                 const releasesHtml = releases.length === 0 
                     ? `<p class="text-gray-500">You haven't created any releases yet.</p>` 
                     : releases.map(createReleaseListItem).join('');
-                
-                document.getElementById('my-releases-list').innerHTML = releasesHtml;
+                const listEl = document.getElementById('my-releases-list');
+                if (listEl) listEl.innerHTML = releasesHtml;
             });
         }
         
-        /**
-         * Renders the 'Admin Review Queue' view.
-         */
-        function renderAdminReviewQueue() {
+        async function renderReleaseDetails(releaseId) {
+             contentArea.innerHTML = `<div class="text-center p-8">Loading release details...</div>`;
+             try {
+                const releaseDoc = await getDoc(doc(db, "releases", releaseId));
+                if (!releaseDoc.exists() || releaseDoc.data().userId !== currentUser.uid) {
+                     contentArea.innerHTML = `<div class="bg-red-100 text-red-700 p-4 rounded-lg">Error: Release not found or you don't have permission to view it.</div>`;
+                     return;
+                }
+                const release = { id: releaseDoc.id, ...releaseDoc.data() };
+                const submittedDate = release.createdAt?.toDate().toLocaleString() || 'N/A';
+                contentArea.innerHTML = `
+                    <div class="bg-white p-8 rounded-xl shadow-md max-w-4xl mx-auto">
+                        <div class="flex flex-col md:flex-row gap-8">
+                            <img src="${release.artworkUrl}" alt="Artwork" class="w-full md:w-64 h-auto md:h-64 rounded-xl object-cover shadow-lg">
+                            <div class="flex-1">
+                                <h2 class="text-3xl font-bold text-gray-900">${release.songTitle}</h2>
+                                <p class="text-xl text-gray-600 mt-1">${release.primaryArtist}</p>
+                                <div class="mt-4 pt-4 border-t">
+                                    <p class="text-sm text-gray-500"><strong>Status:</strong> <span class="font-semibold">${release.status}</span></p>
+                                    <p class="text-sm text-gray-500"><strong>Release Date:</strong> ${release.releaseDate}</p>
+                                    <p class="text-sm text-gray-500"><strong>Genre:</strong> ${release.genre}</p>
+                                    <p class="text-sm text-gray-500"><strong>Record Label:</strong> ${release.recordLabel}</p>
+                                    <p class="text-sm text-gray-500"><strong>Submitted:</strong> ${submittedDate}</p>
+                                </div>
+                                 <div class="mt-4">
+                                    <h4 class="font-semibold text-gray-700">Audio Preview:</h4>
+                                    <audio controls src="${release.audioUrl}" class="w-full mt-2"></audio>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-8 border-t pt-6">
+                            <h3 class="text-lg font-semibold text-gray-800">Selected Stores</h3>
+                            <div class="flex flex-wrap gap-2 mt-3">
+                                ${release.stores.map(store => `<span class="bg-gray-200 text-gray-800 text-xs font-medium px-2.5 py-1 rounded-full">${store}</span>`).join('')}
+                            </div>
+                        </div>
+                    </div>
+                `;
+             } catch(error) {
+                console.error("Error fetching release details:", error);
+                contentArea.innerHTML = `<div class="bg-red-100 text-red-700 p-4 rounded-lg">Could not load release details.</div>`;
+             }
+        }
+
+        window.handleDeleteRelease = async (releaseId) => {
+            if (confirm('Are you sure you want to permanently delete this release? This action cannot be undone.')) {
+                showLoading(true);
+                try {
+                    await deleteDoc(doc(db, "releases", releaseId));
+                    showToast('Release deleted successfully.', 'success');
+                    // Note: This does not delete files from Cloudinary to avoid needing backend functions.
+                } catch (error) {
+                    console.error("Error deleting release:", error);
+                    showToast('Failed to delete release.', 'error');
+                } finally {
+                    showLoading(false);
+                }
+            }
+        };
+
+        function renderAdminReleases() {
             contentArea.innerHTML = `
                 <div class="bg-white p-6 rounded-xl shadow-md">
-                    <h3 class="text-xl font-semibold text-gray-800 mb-4">Releases Pending Review</h3>
-                    <div id="admin-review-list" class="space-y-4">
-                        <p>Loading pending releases...</p>
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">All Releases</h3>
+                    <div id="admin-releases-list" class="space-y-4">
+                        <p>Loading all releases...</p>
                     </div>
                 </div>
             `;
-            const q = query(collection(db, "releases"), where("status", "==", "pending"), orderBy("createdAt", "asc"));
+            const q = query(collection(db, "releases"), orderBy("createdAt", "desc"));
             onSnapshot(q, (querySnapshot) => {
-                const releases = [];
-                querySnapshot.forEach((doc) => releases.push({id: doc.id, ...doc.data()}));
-                
+                const releases = querySnapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
                 const reviewHtml = releases.length === 0 
-                    ? `<p class="text-gray-500">The review queue is empty. Great job!</p>` 
-                    : releases.map(createAdminReviewItem).join('');
+                    ? `<p class="text-gray-500">No releases have been submitted yet.</p>` 
+                    : releases.map(createAdminReleaseManagementItem).join('');
 
-                document.getElementById('admin-review-list').innerHTML = reviewHtml;
+                const listEl = document.getElementById('admin-releases-list');
+                if(listEl) listEl.innerHTML = reviewHtml;
             });
         }
         
-        /**
-         * Handles admin actions on releases (approve/reject).
-         * @param {string} releaseId - The Firestore document ID of the release.
-         * @param {string} newStatus - The new status ('live' or 'rejected').
-         */
-        window.handleReleaseApproval = async (releaseId, newStatus) => {
+        window.handleReleaseStatusUpdate = async (releaseId, newStatus) => {
             if (!releaseId || !newStatus) return;
             showLoading(true);
             try {
                 const releaseRef = doc(db, "releases", releaseId);
                 await updateDoc(releaseRef, { status: newStatus });
-                showToast(`Release has been ${newStatus}.`, 'success');
+                showToast(`Release status updated to ${newStatus}.`, 'success');
             } catch (error) {
                 console.error("Error updating release status:", error);
                 showToast("Failed to update release status.", 'error');
@@ -682,71 +729,249 @@
             }
         }
 
+        function renderAdminUsers() {
+            contentArea.innerHTML = `
+                <div class="bg-white p-6 rounded-xl shadow-md mb-8">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">Manage User Balances</h3>
+                    <div id="admin-users-list" class="space-y-4">
+                        <p>Loading users...</p>
+                    </div>
+                </div>
+                 <div class="bg-white p-6 rounded-xl shadow-md">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">Pending Payout Requests</h3>
+                    <div id="admin-payouts-list" class="space-y-4">
+                        <p>Loading payout requests...</p>
+                    </div>
+                </div>
+            `;
+
+            // Render users list
+            const usersQuery = query(collection(db, "users"), orderBy("name", "asc"));
+            onSnapshot(usersQuery, (snapshot) => {
+                const users = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
+                const listEl = document.getElementById('admin-users-list');
+                if(!listEl) return;
+                listEl.innerHTML = users.length > 0 
+                    ? users.map(user => `
+                        <div class="p-4 border rounded-lg flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                            <div>
+                                <p class="font-semibold text-gray-800">${user.name}</p>
+                                <p class="text-sm text-gray-500">${user.email}</p>
+                                <p class="text-lg font-bold theme-text mt-1">$${user.balance.toFixed(2)}</p>
+                            </div>
+                            <form class="flex items-center gap-2" data-user-id="${user.id}" onsubmit="event.preventDefault(); window.handleUpdateBalance(this);">
+                                <input type="number" step="0.01" required class="w-24 p-1 border rounded-md" placeholder="Amount">
+                                <button type="submit" name="action" value="add" class="bg-green-500 text-white text-xs px-2 py-1 rounded-md hover:bg-green-600">Add</button>
+                                <button type="submit" name="action" value="subtract" class="bg-red-500 text-white text-xs px-2 py-1 rounded-md hover:bg-red-600">Subtract</button>
+                            </form>
+                        </div>
+                    `).join('')
+                    : `<p>No users found.</p>`;
+            });
+
+            // Render payouts list
+            const payoutsQuery = query(collection(db, "payouts"), where("status", "==", "pending"), orderBy("requestedAt", "asc"));
+            onSnapshot(payoutsQuery, (snapshot) => {
+                const payouts = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
+                const listEl = document.getElementById('admin-payouts-list');
+                if(!listEl) return;
+                listEl.innerHTML = payouts.length > 0 
+                    ? payouts.map(payout => `
+                        <div class="p-4 border rounded-lg flex items-center justify-between">
+                            <div>
+                                <p class="font-semibold">${payout.userName} (${payout.userEmail})</p>
+                                <p class="text-gray-600">Requested <span class="font-bold text-xl theme-text">$${payout.amount.toFixed(2)}</span> on ${payout.requestedAt.toDate().toLocaleDateString()}</p>
+                            </div>
+                            <button class="btn-primary py-1 px-3 rounded-md" onclick="window.handlePayoutConfirmation('${payout.id}')">Mark as Paid</button>
+                        </div>
+                    `).join('')
+                    : `<p>No pending payout requests.</p>`;
+            });
+        }
+
+        window.handleUpdateBalance = async (form) => {
+            const userId = form.dataset.userId;
+            const amount = parseFloat(form.querySelector('input').value);
+            const action = document.activeElement.value;
+
+            if (isNaN(amount) || amount <= 0) {
+                showToast('Please enter a valid positive amount.', 'error');
+                return;
+            }
+
+            const amountToUpdate = action === 'add' ? amount : -amount;
+            
+            showLoading(true);
+            try {
+                await updateDoc(doc(db, "users", userId), {
+                    balance: increment(amountToUpdate)
+                });
+                showToast(`Balance updated successfully for user.`, 'success');
+                form.reset();
+            } catch (error) {
+                console.error("Balance update error:", error);
+                showToast('Failed to update balance.', 'error');
+            } finally {
+                showLoading(false);
+            }
+        };
+
+        window.handlePayoutConfirmation = async (payoutId) => {
+            if (confirm('Are you sure you have completed this payout? This will mark it as paid.')) {
+                showLoading(true);
+                try {
+                    await updateDoc(doc(db, "payouts", payoutId), { status: 'paid' });
+                    showToast('Payout marked as paid.', 'success');
+                } catch(error) {
+                    console.error("Error confirming payout:", error);
+                    showToast('Could not update payout status.', 'error');
+                } finally {
+                    showLoading(false);
+                }
+            }
+        };
+
         // --- RENDERER HELPER FUNCTIONS ---
 
-        /**
-         * Creates an HTML list item for a release (user view).
-         */
         function createReleaseListItem(release) {
             const statusColors = {
                 pending: 'bg-yellow-100 text-yellow-800',
-                live: 'bg-green-100 text-green-800',
-                rejected: 'bg-red-100 text-red-800'
+                approved: 'bg-blue-100 text-blue-800',
+                delivered: 'bg-green-100 text-green-800',
+                rejected: 'bg-red-100 text-red-800',
+                'taken down': 'bg-gray-200 text-gray-800'
             };
-            const releaseDate = release.releaseDate || (release.createdAt?.toDate().toLocaleDateString());
-
+            const canDelete = ['pending', 'rejected'].includes(release.status);
             return `
-                <div class="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
-                    <div class="flex items-center">
-                        <img src="${release.artworkUrl}" alt="Artwork for ${release.songTitle}" class="w-12 h-12 rounded-md mr-4 object-cover">
+                <div class="p-4 border rounded-lg hover:bg-gray-50 flex items-center justify-between gap-4">
+                    <div class="flex items-center gap-4 flex-1 cursor-pointer" onclick="navigateTo('release-details', '${release.id}')">
+                        <img src="${release.artworkUrl}" alt="Artwork" class="w-12 h-12 rounded-md object-cover">
                         <div>
                             <p class="font-semibold text-gray-800">${release.songTitle}</p>
-                            <p class="text-sm text-gray-500">${release.primaryArtist} &bull; Released: ${releaseDate}</p>
+                            <p class="text-sm text-gray-500">${release.primaryArtist} &bull; Release: ${release.releaseDate}</p>
                         </div>
                     </div>
-                    <span class="text-xs font-medium px-2.5 py-0.5 rounded-full ${statusColors[release.status] || 'bg-gray-100 text-gray-800'}">${release.status}</span>
+                    <div class="flex items-center gap-4">
+                         <span class="text-xs font-medium px-2.5 py-0.5 rounded-full ${statusColors[release.status] || ''}">${release.status}</span>
+                         ${canDelete ? `<button onclick="event.stopPropagation(); window.handleDeleteRelease('${release.id}')" class="text-gray-400 hover:text-red-500" title="Delete Release"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>` : ''}
+                    </div>
                 </div>
             `;
         }
 
-        /**
-         * Creates an HTML list item for a release (admin review view).
-         */
-        function createAdminReviewItem(release) {
+        function createAdminReleaseManagementItem(release) {
              const submittedDate = release.createdAt?.toDate().toLocaleString() || 'N/A';
+             let actionsHtml = '';
+             switch(release.status) {
+                case 'pending':
+                    actionsHtml = `
+                        <button onclick="window.handleReleaseStatusUpdate('${release.id}', 'approved')" class="bg-blue-500 hover:bg-blue-600 text-white text-sm font-bold py-1 px-3 rounded-lg">Approve</button>
+                        <button onclick="window.handleReleaseStatusUpdate('${release.id}', 'rejected')" class="bg-red-500 hover:bg-red-600 text-white text-sm font-bold py-1 px-3 rounded-lg">Reject</button>
+                    `;
+                    break;
+                case 'approved':
+                    actionsHtml = `
+                        <button onclick="window.handleReleaseStatusUpdate('${release.id}', 'delivered')" class="bg-green-500 hover:bg-green-600 text-white text-sm font-bold py-1 px-3 rounded-lg">Mark Delivered</button>
+                        <button onclick="window.handleReleaseStatusUpdate('${release.id}', 'taken down')" class="bg-gray-500 hover:bg-gray-600 text-white text-sm font-bold py-1 px-3 rounded-lg">Take Down</button>
+                    `;
+                    break;
+                case 'delivered':
+                     actionsHtml = `<button onclick="window.handleReleaseStatusUpdate('${release.id}', 'taken down')" class="bg-gray-500 hover:bg-gray-600 text-white text-sm font-bold py-1 px-3 rounded-lg">Take Down</button>`;
+                     break;
+                 default:
+                    actionsHtml = `<p class="text-xs text-gray-500">No actions available.</p>`;
+             }
+             const statusColors = { pending: 'border-yellow-400', approved: 'border-blue-400', delivered: 'border-green-400', rejected: 'border-red-400', 'taken down': 'border-gray-300' };
+
              return `
-                <div class="p-4 border rounded-lg">
+                <div class="p-4 border-l-4 ${statusColors[release.status]} rounded-lg bg-white shadow-sm">
                     <div class="flex items-start justify-between">
                         <div class="flex items-start">
                             <img src="${release.artworkUrl}" alt="Artwork" class="w-16 h-16 rounded-md mr-4 object-cover">
                             <div>
                                 <p class="font-bold text-lg text-gray-900">${release.songTitle}</p>
-                                <p class="text-sm text-gray-600">by <span class="font-medium">${release.primaryArtist}</span> (Artist: ${release.userName})</p>
-                                <p class="text-xs text-gray-500 mt-1">Submitted: ${submittedDate}</p>
+                                <p class="text-sm text-gray-600">by <span class="font-medium">${release.primaryArtist}</span> (User: ${release.userName})</p>
+                                <p class="text-xs text-gray-500 mt-1">Status: <span class="font-semibold">${release.status}</span> &bull; Submitted: ${submittedDate}</p>
                                 <div class="mt-2">
                                      <audio controls src="${release.audioUrl}" class="w-full max-w-sm"></audio>
                                 </div>
                             </div>
                         </div>
-                        <div class="flex flex-col space-y-2">
-                             <button onclick="handleReleaseApproval('${release.id}', 'live')" class="bg-green-500 hover:bg-green-600 text-white text-sm font-bold py-1 px-3 rounded-lg transition-colors">Approve</button>
-                             <button onclick="handleReleaseApproval('${release.id}', 'rejected')" class="bg-red-500 hover:bg-red-600 text-white text-sm font-bold py-1 px-3 rounded-lg transition-colors">Reject</button>
+                        <div class="flex flex-col space-y-2 items-end min-w-[120px]">
+                            ${actionsHtml}
                         </div>
                     </div>
                 </div>
              `;
         }
 
-        // --- PLACEHOLDER RENDERERS ---
+        // --- PLACEHOLDER & PAYOUTS RENDERERS ---
 
         function renderAnalytics() {
             contentArea.innerHTML = `<div class="bg-white p-8 rounded-xl shadow-md text-center"><h2 class="text-2xl font-bold text-gray-800">📊 Analytics</h2><p class="mt-2 text-gray-600">Detailed stream and download analytics are coming soon!</p></div>`;
         }
+        
         function renderPayouts() {
-            contentArea.innerHTML = `<div class="bg-white p-8 rounded-xl shadow-md text-center"><h2 class="text-2xl font-bold text-gray-800">💰 Payouts</h2><p class="mt-2 text-gray-600">View your earnings and request payouts. This feature is currently in development.</p></div>`;
+            contentArea.innerHTML = `<div class="bg-white p-8 rounded-xl shadow-md max-w-lg mx-auto text-center" id="payouts-container">Loading payout information...</div>`;
+            const userRef = doc(db, "users", currentUser.uid);
+            const payoutsQuery = query(collection(db, "payouts"), where("userId", "==", currentUser.uid), where("status", "==", "pending"));
+
+            onSnapshot(userRef, (userDoc) => {
+                onSnapshot(payoutsQuery, (payoutsSnapshot) => {
+                    const userData = userDoc.exists() ? userDoc.data() : { balance: 0 };
+                    const hasPendingRequest = !payoutsSnapshot.empty;
+                    const balance = userData.balance || 0;
+                    
+                    const container = document.getElementById('payouts-container');
+                    if (!container) return;
+
+                    let statusMessage = '';
+                    if (hasPendingRequest) {
+                        const requestedAmount = payoutsSnapshot.docs[0].data().amount;
+                        statusMessage = `<p class="mt-4 p-3 bg-yellow-100 text-yellow-800 rounded-lg">You have a pending payout request for <strong>$${requestedAmount.toFixed(2)}</strong>. You can request another after this one is processed.</p>`;
+                    }
+
+                    container.innerHTML = `
+                        <h2 class="text-2xl font-bold text-gray-800">💰 Payouts</h2>
+                        <p class="mt-4 text-gray-600">Your current available balance is:</p>
+                        <p class="text-5xl font-bold theme-text my-4">$${balance.toFixed(2)}</p>
+                        <button id="request-payout-btn" class="btn-primary font-bold py-3 px-8 rounded-lg w-full" ${hasPendingRequest || balance <= 0 ? 'disabled' : ''}>
+                            ${hasPendingRequest ? 'Pending Request...' : 'Request Payout'}
+                        </button>
+                        ${statusMessage}
+                    `;
+
+                    if (!hasPendingRequest && balance > 0) {
+                        document.getElementById('request-payout-btn').addEventListener('click', () => handleRequestPayout(balance));
+                    }
+                });
+            });
         }
-        function renderAdminUsers() {
-            contentArea.innerHTML = `<div class="bg-white p-8 rounded-xl shadow-md text-center"><h2 class="text-2xl font-bold text-gray-800">👥 Manage Users</h2><p class="mt-2 text-gray-600">A comprehensive user management interface will be available here soon.</p></div>`;
+
+        async function handleRequestPayout(balance) {
+            if (balance <= 0) {
+                showToast("You have no balance to withdraw.", 'error');
+                return;
+            }
+             if (confirm(`You are about to request a payout for your entire balance of $${balance.toFixed(2)}. Do you want to continue?`)) {
+                showLoading(true);
+                try {
+                    await addDoc(collection(db, "payouts"), {
+                        userId: currentUser.uid,
+                        userName: currentUser.displayName,
+                        userEmail: currentUser.email,
+                        amount: balance,
+                        status: 'pending',
+                        requestedAt: serverTimestamp()
+                    });
+                    showToast('Payout request submitted successfully!', 'success');
+                } catch(error) {
+                    console.error("Error requesting payout:", error);
+                    showToast("There was an error submitting your request.", 'error');
+                } finally {
+                    showLoading(false);
+                }
+            }
         }
 
         // --- EVENT LISTENERS & INITIALIZATION ---
@@ -772,6 +997,17 @@
         });
          document.getElementById('mobile-menu-overlay').addEventListener('click', () => {
             document.getElementById('mobile-menu').classList.add('hidden');
+        });
+
+        // Global click handler for dynamic content
+        contentArea.addEventListener('click', (e) => {
+            // Handle navigate clicks for items that don't have an onclick
+            const listItem = e.target.closest('[data-view]');
+            if (listItem) {
+                const view = listItem.dataset.view;
+                const id = listItem.dataset.id;
+                if(view && id) navigateTo(view, id);
+            }
         });
 
     </script>
