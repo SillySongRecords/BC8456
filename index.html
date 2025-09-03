@@ -375,10 +375,11 @@
 
     // NEW: Function to render the Account/Payment Settings page
     async function renderAccountSettings() {
-        contentArea.innerHTML = `<div class="bg-white p-8 rounded-xl shadow-md max-w-2xl mx-auto">Loading account details...</div>`;
-        const userDoc = await getDoc(doc(db, "users", currentUser.uid));
+    contentArea.innerHTML = `<div class="bg-white p-8 rounded-xl shadow-md max-w-2xl mx-auto">Loading account details...</div>`;
+    // Listen for real-time changes and render when data is loaded
+    const userRef = doc(db, "users", currentUser.uid);
+    onSnapshot(userRef, (userDoc) => {
         const userData = userDoc.exists() ? userDoc.data() : {};
-
         if (userData.payoutMethod) {
             // User has already set up payment info
             let detailsHtml = '';
@@ -410,11 +411,11 @@
                             </div>
                         </div>
                         <div id="paypal-fields" class="mt-4 space-y-4">
-                            <div><label class="block text-sm font-medium text-gray-700">PayPal Email</label><input type="email" id="paypalEmail" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 sm:text-sm"></div>
+                            <div><label class="block text-sm font-medium text-gray-700">PayPal Email</label><input type="email" id="paypalEmail" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></div>
                         </div>
                         <div id="check-fields" class="mt-4 space-y-4 hidden">
-                            <div><label class="block text-sm font-medium text-gray-700">Full Legal Name</label><input type="text" id="legalName" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 sm:text-sm"></div>
-                            <div><label class="block text-sm font-medium text-gray-700">Full Mailing Address</label><textarea id="mailingAddress" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 sm:text-sm"></textarea></div>
+                            <div><label class="block text-sm font-medium text-gray-700">Full Legal Name</label><input type="text" id="legalName" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></div>
+                            <div><label class="block text-sm font-medium text-gray-700">Full Mailing Address</label><textarea id="mailingAddress" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></textarea></div>
                         </div>
                         <div class="mt-6">
                             <button type="submit" class="btn-primary py-2 px-4 rounded-md w-full">Save Payout Information</button>
@@ -422,6 +423,7 @@
                     </form>
                 </div>`;
 
+            // Setup form listeners after rendering
             const form = document.getElementById('payout-setup-form');
             const radios = form.querySelectorAll('input[name="payoutMethod"]');
             radios.forEach(radio => radio.addEventListener('change', (e) => {
@@ -434,8 +436,8 @@
             }));
             form.addEventListener('submit', handleSavePaymentInfo);
         }
-    }
-
+    });
+}
     // NEW: Function to render the Admin Payouts page
     function renderAdminPayouts() {
         contentArea.innerHTML = `
