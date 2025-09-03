@@ -1,1400 +1,1223 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale $=1.0">$
-<title>Browncow Distribution</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<link
-href="https://fonts.googleapis.com/css?family=Inter:wght@400;500;600;700&display=swap"
- rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.0/chart.min.js"></script>
- <style>
-body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
-.theme-purple { background-color: #5a4ae3; }
-theme-text { color: #5a4ae3; }
-theme-border { border-color: #5a4ae3; }
-.btn-primary { background-color: #5a4ae3; color: white; transition: background-color 0.3s; }
-.btn-primary:hover { background-color: #4b3bc5; }
-.btn-primary:disabled { background-color: #a5b4fc; cursor: not-allowed; }
-.btn-secondary { background-color: #e2e8f0; color: #475569; transition: background-color
-0.3s; }
-.btn-secondary:hover { background-color: #cbd5e1; }
-.no-scrollbar::-webkit-scrollbar { display: none; }
-.no-scrollbar {-ms-overflow-style: none; scrollbar-width: none; }
-.view { display: none; }
-.active-view { display: block; }
-.animate-spin { animation: spin 1s linear infinite; }
-@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
- .progress-bar { background-color: #e2e8f0; border-radius: 9999px;
-overflow: hidden; }
- progress-bar-inner { background-color: #5a4ae3; height: 100%; transition: width 0.3s
- ease-in-out; }
-/* Modal Styles */
-.modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height:
- 100%; overflow: auto; background-color: rgba(0,0,0,0.5);
-}
-.modal-content { background-color: #fefefe; margin: 5% auto; padding: 25px; border: 1px
- solid #888; width: 80%; max-width: 700px; border-radius: 12px; }
-.modal-header { display: flex; justify-content: space-between; align-items: center;
-border-bottom: 1px solid #e5e7eb; padding-bottom: 1rem; }
-.modal-close { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
- modal-close:hover, .modal-close:focus { color: black; text-decoration: none;
-}
-input:disabled, select:disabled, textarea:disabled { background-color: #f3f4f6; cursor:
-not-allowed; }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Browncow Distribution</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.0/chart.min.js"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        .theme-purple { background-color: #5a4ae3; }
+        .theme-text { color: #5a4ae3; }
+        .theme-border { border-color: #5a4ae3; }
+        .btn-primary { background-color: #5a4ae3; color: white; transition: background-color 0.3s; }
+        .btn-primary:hover { background-color: #4b3bc5; }
+        .btn-primary:disabled { background-color: #a5b4fc; cursor: not-allowed; }
+        .btn-secondary { background-color: #e2e8f0; color: #475569; transition: background-color 0.3s; }
+        .btn-secondary:hover { background-color: #cbd5e1; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .view { display: none; }
+        .active-view { display: block; }
+        .animate-spin { animation: spin 1s linear infinite; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .progress-bar { background-color: #e2e8f0; border-radius: 9999px; overflow: hidden; }
+        .progress-bar-inner { background-color: #5a4ae3; height: 100%; transition: width 0.3s ease-in-out; }
+        /* Modal Styles */
+        .modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); }
+        .modal-content { background-color: #fefefe; margin: 5% auto; padding: 25px; border: 1px solid #888; width: 80%; max-width: 700px; border-radius: 12px; }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e5e7eb; padding-bottom: 1rem; }
+        .modal-close { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
+        .modal-close:hover, .modal-close:focus { color: black; text-decoration: none; }
+        input:disabled, select:disabled, textarea:disabled { background-color: #f3f4f6; cursor: not-allowed; }
+    </style>
 </head>
 <body class="bg-gray-50">
-<div id="loading-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center
- justify-center hidden">
-<div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-white"></div>
- </div>
-<div id="toast" class="fixed top-5 right-5 bg-green-500 text-white py-2 px-4 rounded-lg
- shadow-lg hidden transition-opacity duration-300">
-<p id="toast-message"></p>
+
+<div id="loading-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
+    <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-white"></div>
 </div>
-<div id="auth-view" class="view active-view min-h-screen flex items-center justify-center
- bg-gray-100">
-<div class="w-full max-w-md p-8 space-y-8 bg-white rounded-2xl shadow-lg">
- <div id="login-form">
-<div class="text-center">
-<h2 class="text-3xl font-bold text-gray-900"><span
-class="theme-text">Browncow</span> Distribution</h2>
-<p class="mt-2 text-sm text-gray-600">Welcome back! Please sign in.</p>
- </div>
-<form class="mt-8 space-y-6" onsubmit="handleLogin(event)">
-<div class="rounded-md shadow-sm-space-y-px">
-<div><input id="login-email" name="email" type="email" autocomplete="email"
-required class="appearance-none rounded-none relative block w-full px-3 py-2 border
- border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none
- focus:ring-purple-500 focus:border-purple-500 focus:z-10 sm:text-sm" placeholder="Email
- address"></div>
-<div><input id="login-password" name="password" type="password"
- autocomplete="current-password" required class="appearance-none rounded-none relative
- block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md
- focus:outline-none focus:ring-purple-500 focus:border-purple-500 focus:z-10 sm:text-sm"
- placeholder="Password"></div>
+<div id="toast" class="fixed top-5 right-5 bg-green-500 text-white py-2 px-4 rounded-lg shadow-lg hidden transition-opacity duration-300">
+    <p id="toast-message"></p>
 </div>
-<div><button type="submit" class="group relative w-full flex justify-center py-2 px-4
-border border-transparent text-sm font-medium rounded-md text-white bg-purple-600
- hover:bg-purple-700 focus: outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500
- btn-primary">Sign in</button></div>
-</form>
-<div class="text-sm text-center mt-4"><a href="#" id="show-signup" class="font-medium
- theme-text hover: text-purple-500">Don't have an account? Sign up</a></div>
- </div>
-<div id="signup-form" class="hidden">
-<div class="text-center">
-<h2 class="text-3xl font-bold text-gray-900"><span
-class="theme-text">Browncow</span> Distribution</h2>
-<p class="mt-2 text-sm text-gray-600">Create your account to get started.</p>
- </div>
-<form class="mt-8 space-y-6" onsubmit="handleSignup (event)">
-<div class="rounded-md shadow-sm">
-<input id="signup-name" type="text" required class="appearance-none rounded-md
-relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900
- focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm mb-2"
- placeholder="Full Name or Artist Name">
-<input id="signup-email" type="email" required class="appearance-none
- rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500
- text-gray-900 focus: outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm
- mb-2" placeholder="Email address">
-<input id="signup-password" type="password" required class="appearance-none
- rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500
- text-gray-900 focus: outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm"
- placeholder="Password (min. 6 characters)">
+
+<div id="auth-view" class="view active-view min-h-screen flex items-center justify-center bg-gray-100">
+    <div class="w-full max-w-md p-8 space-y-8 bg-white rounded-2xl shadow-lg">
+        <div id="login-form">
+            <div class="text-center">
+                <h2 class="text-3xl font-bold text-gray-900"><span class="theme-text">Browncow</span> Distribution</h2>
+                <p class="mt-2 text-sm text-gray-600">Welcome back! Please sign in.</p>
+            </div>
+            <form class="mt-8 space-y-6" onsubmit="handleLogin(event)">
+                <div class="rounded-md shadow-sm-space-y-px">
+                    <div><input id="login-email" name="email" type="email" autocomplete="email" required class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-purple-500 focus:border-purple-500 focus:z-10 sm:text-sm" placeholder="Email address"></div>
+                    <div><input id="login-password" name="password" type="password" autocomplete="current-password" required class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-purple-500 focus:border-purple-500 focus:z-10 sm:text-sm" placeholder="Password"></div>
+                </div>
+                <div><button type="submit" class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 btn-primary">Sign in</button></div>
+            </form>
+            <div class="text-sm text-center mt-4"><a href="#" id="show-signup" class="font-medium theme-text hover:text-purple-500">Don't have an account? Sign up</a></div>
+        </div>
+        <div id="signup-form" class="hidden">
+            <div class="text-center">
+                <h2 class="text-3xl font-bold text-gray-900"><span class="theme-text">Browncow</span> Distribution</h2>
+                <p class="mt-2 text-sm text-gray-600">Create your account to get started.</p>
+            </div>
+            <form class="mt-8 space-y-6" onsubmit="handleSignup(event)">
+                <div class="rounded-md shadow-sm">
+                    <input id="signup-name" type="text" required class="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm mb-2" placeholder="Full Name or Artist Name">
+                    <input id="signup-email" type="email" required class="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm mb-2" placeholder="Email address">
+                    <input id="signup-password" type="password" required class="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm" placeholder="Password (min. 6 characters)">
+                </div>
+                <div><button type="submit" class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 btn-primary">Sign up</button></div>
+            </form>
+            <div class="text-sm text-center mt-4"><a href="#" id="show-login" class="font-medium theme-text hover:text-purple-500">Already have an account? Sign in</a></div>
+        </div>
+    </div>
 </div>
-<div><button type="submit" class="group relative w-full flex justify-center py-2 px-4
- border border-transparent text-sm font-medium rounded-md text-white bg-purple-600
- hover:bg-purple-700 focus: outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500
- btn-primary">Sign up</button></div>
-</form>
-<div class="text-sm text-center mt-4"><a href="#" id="show-login" class="font-medium
- theme-text hover:text-purple-500">Already have an account? Sign in</a></div>
-</div>
-</div>
-</div>
+
 <div id="app-view" class="view">
-<div class="flex h-screen bg-gray-100">
-<div class="hidden md:flex flex-col w-64 bg-white shadow-lg">
-<div class="flex items-center justify-center h-16 bg-white border-b">
-<h1 class="text-2xl font-bold theme-text">Browncow</h1>
+    <div class="flex h-screen bg-gray-100">
+        <div class="hidden md:flex flex-col w-64 bg-white shadow-lg">
+            <div class="flex items-center justify-center h-16 bg-white border-b">
+                <h1 class="text-2xl font-bold theme-text">Browncow</h1>
+            </div>
+            <div class="flex flex-col flex-grow p-4">
+                <nav id="user-nav" class="flex-grow space-y-2"></nav>
+                <nav id="admin-nav" class="flex-grow space-y-2 hidden"></nav>
+                <div class="mt-auto">
+                    <a href="#" onclick="handleLogout()" class="flex items-center px-4 py-2 mt-2 text-sm font-medium text-gray-600 rounded-md hover:bg-gray-200">
+                        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                        Logout
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex flex-col flex-1 overflow-y-auto">
+            <header class="flex items-center justify-between h-16 bg-white border-b px-6">
+                <div class="flex items-center">
+                    <button id="mobile-menu-button" class="md:hidden mr-4 text-gray-600">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
+                    </button>
+                    <h1 id="page-title" class="text-xl font-semibold text-gray-800">Dashboard</h1>
+                </div>
+                <div class="flex items-center">
+                    <span id="user-greeting" class="text-sm text-gray-600"></span>
+                </div>
+            </header>
+            <main class="p-6 md:p-10 space-y-8">
+                <div id="content-area"></div>
+            </main>
+        </div>
+    </div>
+
+    <div id="mobile-menu" class="fixed inset-0 flex z-40 md:hidden hidden">
+        <div class="fixed inset-0 bg-black opacity-25" id="mobile-menu-overlay"></div>
+        <div class="relative flex-1 flex flex-col max-w-xs w-full bg-white">
+            <div class="absolute top-0 right-0 -mr-12 pt-2">
+                <button id="mobile-menu-close" class="ml-1 flex items-center justify-center h-10 w-10 rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white">
+                     <svg class="h-6 w-6 text-white" stroke="currentColor" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+            </div>
+            <div class="flex-1 h-0 pt-5 pb-4 overflow-y-auto">
+                <div class="flex-shrink-0 flex items-center px-4">
+                    <h1 class="text-2xl font-bold theme-text">Browncow</h1>
+                </div>
+                <nav id="mobile-user-nav" class="mt-5 px-2 space-y-1"></nav>
+                <nav id="mobile-admin-nav" class="mt-5 px-2 space-y-1 hidden"></nav>
+            </div>
+            <div class="flex-shrink-0 flex border-t p-4">
+                <a href="#" onclick="handleLogout()" class="flex-shrink-0 group block">
+                    <div class="flex items-center">
+                        <div>
+                            <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm font-medium text-gray-700 group-hover:text-gray-900">Logout</p>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
 </div>
-<div class="flex flex-col flex-grow p-4">
-<nav id="user-nav" class="flex-grow space-y-2"></nav>
-<nav id="admin-nav" class="flex-grow space-y-2 hidden"></nav>
-<div class="mt-auto">
-<a href="#" onclick="handleLogout()" class="flex items-center px-4 py-2 mt-2
-text-sm font-medium text-gray-600 rounded-md hover:bg-gray-200">
-<svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"
- xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round"
-stroke-width="2" d="M17 1614-4m0 01-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0
- 013-3h4a3 3 0 013 3v1"></path></svg>
-Logout
-</a>
-</div>
-</div>
-</div>
-<div class="flex flex-col flex-1 overflow-y-auto">
-<header class="flex items-center justify-between h-16 bg-white border-b px-6">
- <div class="flex items-center">
-<button id="mobile-menu-button" class="md:hidden mr-4 text-gray-600">
-<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
- xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round"
- stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
-</button>
-<h1 id="page-title" class="text-xl font-semibold text-gray-800">Dashboard</h1>
-</div>
-<div class="flex items-center">
-<span id="user-greeting" class="text-sm text-gray-600"></span>
-</div>
-</header>
-<main class="p-6 md:p-10 space-y-8">
-<div id="content-area"></div>
-</main>
-</div>
-</div>
-<div id="mobile-menu" class="fixed inset-0 flex z-40 md:hidden hidden">
-<div class="fixed inset-0 bg-black opacity-25" id="mobile-menu-overlay"></div>
-<div class="relative flex-1 flex flex-col max-w-xs w-full bg-white">
-<div class="absolute top-0 right-0-mr-12 pt-2">
-<button id="mobile-menu-close" class="ml-1 flex items-center justify-center h-10 w-10
-rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white">
-<svg class="h-6 w-6 text-white" stroke="currentColor" fill="none" viewBox="0 0 24
- 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6
- 6112 12" /></svg>
-</button>
-</div>
-<div class="flex-1 h-0 pt-5 pb-4 overflow-y-auto">
-<div class="flex-shrink-0 flex items-center px-4">
-<h1 class="text-2xl font-bold theme-text">Browncow</h1>
-</div>
-<nav id="mobile-user-nav" class="mt-5 px-2 space-y-1"></nav>
-<nav id="mobile-admin-nav" class="mt-5 px-2 space-y-1 hidden"></nav>
-</div>
-<div class="flex-shrink-0 flex border-t p-4">
-<a href="#" onclick="handleLogout()" class="flex-shrink-0 group block">
- <div class="flex items-center">
-<div>
-<svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor"
- viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round"
- stroke-linejoin="round" stroke-width="2" d="M17 1614-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3
- 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
-</div>
-<div class="ml-3">
-<p class="text-sm font-medium text-gray-700
-group-hover:text-gray-900">Logout</p>
-</div>
-</div>
-</a>
-</div>
-</div>
-</div>
-</div>
+
 <div id="release-details-modal" class="modal">
-<div class="modal-content">
-<div class="modal-header">
-<h2 class="text-xl font-bold text-gray-800">Release Metadata</h2>
-<span class="modal-close"
-onclick="document.getElementById('release-details-modal').style.display='none'">&times;</span
->
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 class="text-xl font-bold text-gray-800">Release Metadata</h2>
+            <span class="modal-close" onclick="document.getElementById('release-details-modal').style.display='none'">&times;</span>
+        </div>
+        <div class="mt-4">
+            <div class="p-3 mb-4 text-sm text-blue-800 rounded-lg bg-blue-100" role="alert">
+                This information is locked. To request a metadata update, please contact support.
+            </div>
+            <form id="view-release-form" class="space-y-4">
+                <fieldset disabled>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div><label class="block text-sm font-medium text-gray-700">Song Title</label><input type="text" id="view-songTitle" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm"></div>
+                        <div><label class="block text-sm font-medium text-gray-700">Primary Artist</label><input type="text" id="view-primaryArtist" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm"></div>
+                        <div><label class="block text-sm font-medium text-gray-700">Featured Artists</label><input type="text" id="view-featuredArtists" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm"></div>
+                        <div><label class="block text-sm font-medium text-gray-700">Release Date</label><input type="date" id="view-releaseDate" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm"></div>
+                        <div><label class="block text-sm font-medium text-gray-700">Genre</label><input type="text" id="view-genre" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm"></div>
+                        <div><label class="block text-sm font-medium text-gray-700">Record Label</label><input type="text" id="view-recordLabel" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm"></div>
+                        <div><label class="block text-sm font-medium text-gray-700">UPC</label><input type="text" id="view-upc" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm"></div>
+                        <div><label class="block text-sm font-medium text-gray-700">ISRC</label><input type="text" id="view-isrc" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm"></div>
+                    </div>
+                    <div class="mt-4"><label class="block text-sm font-medium text-gray-700">Spotify Profile URL</label><input type="url" id="view-spotifyLink" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm"></div>
+                    <div class="mt-4"><label class="block text-sm font-medium text-gray-700">Apple Music Profile URL</label><input type="url" id="view-appleLink" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm"></div>
+                    <div class="mt-4"><label class="block text-sm font-medium text-gray-700">YouTube Music Profile URL</label><input type="url" id="view-youtubeLink" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm"></div>
+                </fieldset>
+            </form>
+        </div>
+    </div>
 </div>
-<div class="mt-4">
-<div class="p-3 mb-4 text-sm text-blue-800 rounded-lg bg-blue-100" role="alert">
-This information is locked. To request a metadata update, please contact support.
-</div>
-<form id="view-release-form" class="space-y-4">
-<fieldset disabled>
-<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-<div><label class="block text-sm font-medium text-gray-700">Song
- Title</label><input type="text" id="view-song Title" class="mt-1 block w-full rounded-md
- border-gray-300 shadow-sm sm:text-sm"></div>
-<div><label class="block text-sm font-medium text-gray-700">Primary
- Artist</label><input type="text" id="view-primaryArtist" class="mt-1 block w-full rounded-md
- border-gray-300 shadow-sm sm:text-sm"></div>
-<div><label class="block text-sm font-medium text-gray-700">Featured
-Artists</label><input type="text" id="view-featured Artists" class="mt-1 block w-full rounded-md
- border-gray-300 shadow-sm sm:text-sm"></div>
-<div><label class="block text-sm font-medium text-gray-700">Release
- Date</label><input type="date" id="view-release Date" class="mt-1 block w-full rounded-md
- border-gray-300 shadow-sm sm:text-sm"></div>
-<div><label class="block text-sm font-medium
-text-gray-700">Genre</label><input type="text" id="view-genre" class="mt-1 block w-full
- rounded-md border-gray-300 shadow-sm sm:text-sm"></div>
-<div><label class="block text-sm font-medium text-gray-700">Record
- Label</label><input type="text" id="view-recordLabel" class="mt-1 block w-full rounded-md
- border-gray-300 shadow-sm sm:text-sm"></div>
-<div><label class="block text-sm font-medium text-gray-700">UPC</label><input
- type="text" id="view-upc" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm
- sm:text-sm"></div>
-<div><label class="block text-sm font-medium
-text-gray-700">ISRC</label><input type="text" id="view-isrc" class="mt-1 block w-full
- rounded-md border-gray-300 shadow-sm sm:text-sm"></div>
-</div>
-<div class="mt-4"><label class="block text-sm font-medium text-gray-700">Spotify
- Profile URL</label><input type="url" id="view-spotifyLink" class="mt-1 block w-full rounded-md
- border-gray-300 shadow-sm sm:text-sm"></div>
-<div class="mt-4"><label class="block text-sm font-medium text-gray-700">Apple
- Music Profile URL</label><input type="url" id="view-appleLink" class="mt-1 block w-full
- rounded-md border-gray-300 shadow-sm sm:text-sm"></div>
-<div class="mt-4"><label class="block text-sm font-medium
-text-gray-700">YouTube Music Profile URL</label><input type="url" id="view-youtube Link"
- class="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm"></div>
-</fieldset>
-</form>
-</div>
-</div>
-</div>
+
+
 <script type="module">
-// Firebase and App imports
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
- import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
- onAuthStateChanged, signOut, updateProfile } from
-"https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-import { getFirestore, doc, setDoc, getDoc, addDoc, collection, query, where, getDocs,
-onSnapshot, updateDoc, orderBy, serverTimestamp, deleteDoc, increment } from
-"https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    // Firebase and App imports
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, doc, setDoc, getDoc, addDoc, collection, query, where, getDocs, onSnapshot, updateDoc, orderBy, serverTimestamp, deleteDoc, increment } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-// MODIFICATION START: Corrected the Firebase configuration object syntax.
- const firebaseConfig = {
-   apiKey: "AlzaSyBimPDyP_2XWcuwvOpVUcfCAJE-G5pDrqs",
-   authDomain: "bccr-899f8.firebaseapp.com",
-   projectId: "bccr-899f8",
-   storageBucket: "bccr-899f8.appspot.com",
-   messagingSenderId: "630028306842",
-   appId: "1:630028306842:web:67bcefc01a26024d4ed223"
- };
-// MODIFICATION END
+    // IMPORTANT: Replace with your Firebase project configuration
+    const firebaseConfig = {
+        apiKey: "AIzaSyBimPDyP_2XWcuwvOpVUcfCAJE-G5pDrqs",
+        authDomain: "bccr-899f8.firebaseapp.com",
+        projectId: "bccr-899f8",
+        storageBucket: "bccr-899f8.firebasestorage.app",
+        messagingSenderId: "630028306842",
+        appId: "1:630028306842:web:67bcefc01a26024d4ed223"
+    };
+    // IMPORTANT: Replace with your Cloudinary configuration
+    const CLOUDINARY_CLOUD_NAME = "dp9on02kr";
+    const CLOUDINARY_UPLOAD_PRESET = "bccccc";
 
-// IMPORTANT: Replace with your Cloudinary configuration
-const CLOUDINARY_CLOUD_NAME = "dp9on02kr";
-const CLOUDINARY_UPLOAD_PRESET = "bccccc";
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-let currentUser = null;
-let isAdmin = false;
-// --- UI Elements
-const authView = document.getElementById('auth-view');
- const appView = document.getElementById('app-view');
-const contentArea = document.getElementById('content-area');
- const pageTitle = document.getElementById('page-title');
-const userGreeting = document.getElementById('user-greeting');
- const loadingOverlay = document.getElementById('loading-overlay');
- const toast = document.getElementById('toast');
-const toastMessage = document.getElementById('toast-message');
-// --- Navigation Setup
-const userNavLinks = [
-{ name: 'Dashboard', icon: '<svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor"
- viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round"
- stroke-linejoin="round" stroke-width="2" d="M3 1212-2m0 017-7 7 7M5 10v10a1 1 0 001
- 1h3m10-1112 2m-2-2v10a1 1001-1 1h-3m-6 0a1 1000-1-1v-4a110 011-1h2a1 10011 1v4a1
- 10 001 1m-6 0h6"></path></svg>', view: 'user-dashboard' },
-{name: 'Create Release', icon: '<svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor"
- viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round"
- stroke-linejoin="round" stroke-width $=^{\prime\prime}2"$ d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>',
- view: 'create-release' },
-{ name: 'My Releases', icon: '<svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor"
- viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round"
- stroke-linejoin="round" stroke-width="2" d="M9 19V6112-3v13M9 19c0 1.105-1.343 2-3
- 2s-3-.895-3-2 1.343-2 3-2 3.895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3
- .895 3 2zM9 6112-3"></path></svg>', view: 'my-releases' },
-{ name: 'Analytics', icon: '<svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor"
- viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round"
- stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945
- 13H11V3.055z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
- d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"></path></svg>', view: 'analytics' },
-{ name: 'Payouts', icon: '<svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor"
- viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round"
- stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002
- 2h2m2 4h10a2 20 002-2v-6a2 2000-2-2H9a2 2000-2 2v6a2 2 0 002 2zm7-5a2 20 11-4 0 2 2
- 0 014 0z"></path></svg>', view: 'payouts' },
-// NEW: Account/Payment Settings Link
-{ name: 'Account', icon: '<svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor"
- viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round"
- stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7
- 7h14a7 7 0 00-7-7z"></path></svg>', view: 'account-settings' }
-];
-const adminNavLinks = [
-{ name: 'All Releases', icon: '<svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor"
- viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round"
- stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0
- 002-2V7a2 2000-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 20 012-2h2a2 20 012 2m-6
- 912 2 4-4"></path></svg>', view: 'admin-releases' },
-{ name: 'Manage Users', icon: '<svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor"
- viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round"
- stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0
- 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M15 21a6 60 00-9-5.197M15 11a3 3 0 11-6 0 3 3 0 016
- Oz"></path></svg>', view: 'admin-users' },
-// NEW: Admin Payouts Management Link
-{name: 'Payouts', icon: '<svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor"
- viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round"
- stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002
- 2h2m2 4h10a2 20 002-2v-6a2 20 00-2-2H9a2 2000-2 2v6a220002 2zm7-5a2 2 0 11-4 022
- 0 014 0z"></path></svg>', view: 'admin-payouts' }
-];
-function createNavLink(link, index) {
- const isActive = index === 0;
-return  `<a href="#" data-view="${link.view}" class="nav-link ${isActive? 'bg-purple-100
- theme-text': 'text-gray-600'} flex items-center px-4 py-2 text-sm font-medium rounded-md
- hover:bg-gray-200">${link.icon} ${link.name}</a>`;
-}
-// --- Authentication Logic ---
-window.handleLogin = async (e) => {
-e.preventDefault();
-showLoading(true);
-const email = document.getElementById('login-email').value;
-const password = document.getElementById('login-password').value;
-try {
-await signInWithEmailAndPassword(auth, email, password);
-showToast('Login successful!');
-} catch (error) {
-console.error("Login Error:", error);
-showToast(`Error: ${error.message}`, 'error');
-} finally {
-showLoading(false);
-}
-};
-window.handleSignup = async (e) => {
-e.preventDefault();
-showLoading(true);
-const name = document.getElementById('signup-name').value;
-const email = document.getElementById('signup-email').value;
-const password = document.getElementById('signup-password').value;
-try {
-const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-const user = userCredential.user;
-await updateProfile(user, { displayName: name });
-await setDoc(doc(db, "users", user.uid), {
-name: name,
-email: email,
-createdAt: serverTimestamp(),
-isAdmin: false,
-balance: 0
-});
-showToast('Signup successful! Welcome.');
-} catch (error) {
-console.error("Signup Error:", error)
-;
-showToast(`Error: ${error.message}`, 'error');
-} finally {
-showLoading(false);
-}
-};
-window.handleLogout = async () => {
-showLoading(true);
-await signOut(auth);
-currentUser = null;
-isAdmin = false;
-showToast('Logged out successfully.');
-showLoading(false);
-};
-onAuthStateChanged(auth, async (user) => {
-if (user) {
-showLoading(true);
-currentUser = user;
-const userDoc = await getDoc(doc(db, "users", user.uid));
-if (userDoc.exists() && userDoc.data().isAdmin) {
-isAdmin = true;
-} else {
-isAdmin = false;
-}
-if (!user.displayName && userDoc.exists()) {
-await updateProfile (user, { displayName: userDoc.data().name });
-}
-userGreeting.textContent = `Hello, ${user.displayName || user.email}`;
-setupAppUI();
-authView.classList.remove('active-view');
-appView.classList.add('active-view');
-showLoading(false);
-} else {
-currentUser = null;
-isAdmin = false;
-authView.classList.add('active-view');
-appView.classList.remove('active-view');
-}
-});
-// --- UI & View Management
-function setupAppUI() {
-const userNavContainer = document.getElementById('user-nav');
-const adminNavContainer = document.getElementById('admin-nav');
-const mobileUserNavContainer = document.getElementById('mobile-user-nav');
-const mobileAdminNavContainer = document.getElementById('mobile-admin-nav');
- 
- if 
- (isAdmin) {
- userNavContainer.classList.add('hidden');
-mobileUserNavContainer.classList.add('hidden');
- adminNavContainer.classList.remove('hidden');
- mobileAdminNavContainer.classList.remove('hidden');
- adminNavContainer.innerHTML = adminNavLinks.map((link, i) => createNavLink(link,
- i)).join('');
- mobileAdminNavContainer.innerHTML = adminNavLinks.map((link, i) =>
- createNavLink(link, i)).join('');
- navigateTo('admin-releases');
-} else {
- userNavContainer.classList.remove('hidden');
- mobileUserNavContainer.classList.remove('hidden');
- adminNavContainer.classList.add('hidden');
- mobileAdminNavContainer.classList.add('hidden');
-userNavContainer.innerHTML = userNavLinks.map((link, i) => createNavLink(link,
- i)).join('');
- mobileUserNavContainer.innerHTML = userNavLinks.map((link, i) => createNavLink(link, i)).join('');
- navigateTo('user-dashboard');
- }
- document.querySelectorAll('.nav-link').forEach(link => {
- link.addEventListener('click', (e) => {
- e.preventDefault();
- const viewName = e.currentTarget.dataset.view;
- navigateTo(viewName);
- });
- });
- }
- function navigateTo(viewName, id = null) {
- pageTitle.textContent = viewName.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
- document.querySelectorAll('.nav-link').forEach(link => {
- link.classList.toggle('bg-purple-100', link.dataset.view === viewName);
- link.classList.toggle('theme-text', link.dataset.view === viewName);
- link.classList.toggle('text-gray-600', link.dataset.view !== viewName);
- });
- switch(viewName) {
- case 'user-dashboard': renderDashboard(); break;
-case 'create-release': renderCreateReleaseForm(); break;
- case 'my-releases': renderMyReleases(); break;
- case 'release-details': renderReleaseDetails(id); break;
- case 'analytics': renderAnalytics(); break;
- case 'payouts': renderPayouts(); break;
-// NEW: Account Settings case
- case 'account-settings': renderAccountSettings(); break;
-case 'admin-releases': renderAdminReleases(); break;
- case 'admin-users': renderAdminUsers(); break;
- // NEW: Admin Payouts case
- case 'admin-payouts': renderAdminPayouts();
-break;
- }
- document.getElementById('mobile-menu').classList.add('hidden');
-}
- 
- // --- NEW: Render Functions for New Views ---
- 
- // NEW: Function to render the Account/Payment Settings page
- async function renderAccountSettings() {
- contentArea.innerHTML = `<div class="bg-white p-8 rounded-xl shadow-md max-w-2xl
- mx-auto">Loading...</div>`;
- const userDoc = await getDoc(doc(db, "users", currentUser.uid));
- if (userDoc.exists() && userDoc.data().payoutMethod) {
- // User has already set up payment info
- const userData = userDoc.data();
- let detailsHtml = '';
- if (userData.payoutMethod === 'paypal') {
- detailsHtml = `<p><strong>Method:</strong> PayPal</p><p><strong>Email:</strong> ${userData.paypalEmail}</p>`;
- } else {
- detailsHtml = `<p><strong>Method:</strong> Paper Check</p><p><strong>Legal Name:</strong> ${userData.legalName}</p><p><strong>Mailing Address:</strong> ${userData.mailingAddress}</p>`;
- }
- contentArea.innerHTML = `
- <div class="bg-white p-8 rounded-xl shadow-md max-w-2xl mx-auto">
- <h2 class="text-2xl font-bold text-gray-800 mb-6">Your Payout Method</h2>
- <div class="space-y-2 text-gray-700">${detailsHtml}</div>
- <div class="mt-6 p-3 text-sm text-blue-800 rounded-lg bg-blue-100" role="alert">
- To update your payout information, please contact support. This is a security measure to protect your earnings.
- </div>
- </div>`;
-} else {
- // User needs to set up payment info
- contentArea.innerHTML = `
- <div class="bg-white p-8 rounded-xl shadow-md max-w-2xl mx-auto">
- <h2 
- class="text-2xl font-bold text-gray-800 mb-6">Setup Your Payout Method</h2>
-<p class="text-gray-600 mb-6">You must set up a payout method before you can
- request your earnings.
-This information can only be changed by contacting support once
- saved.</p>
- <form id="payout-setup-form">
- <div class="space-y-4">
- <label class="font-semibold text-gray-700">Choose a method:</label>
-<div class="flex items-center gap-4">
- <label><input type="radio" name="payoutMethod" value="paypal"
- class="mr-2" checked> PayPal</label>
- <label><input type="radio" name="payoutMethod" value="check"
- class="mr-2"> 
-Paper Check</label>
- </div>
- <div id="paypal-fields">
- <label class="block text-sm font-medium text-gray-700 mt-4">PayPal Email</label>
- <input type="email" id="paypalEmail" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
- </div>
- <div id="check-fields" class="hidden">
- <label class="block text-sm font-medium text-gray-700 mt-4">Full Legal Name</label>
- <input type="text" id="legalName" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
- <label class="block text-sm font-medium text-gray-700 mt-4">Mailing Address</label>
- <textarea id="mailingAddress" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></textarea>
- </div>
- <button type="submit" class="w-full mt-6 btn-primary py-2 px-4 rounded-md">Save Payout Information</button>
- </div>
- </form>
- </div>`;
- const form = document.getElementById('payout-setup-form');
- form.querySelectorAll('input[name="payoutMethod"]').forEach(radio => radio.addEventListener('change', (e) => {
- const isPaypal = e.target.value === 'paypal';
-document.getElementById('paypal-fields').classList.toggle('hidden', !isPaypal);
- document.getElementById('check-fields').classList.toggle('hidden', isPaypal);
- document.getElementById('paypalEmail').required = isPaypal;
- document.getElementById('legalName').required = !isPaypal;
- document.getElementById('mailingAddress').required = !isPaypal;
- }));
- form.addEventListener('submit', handleSavePaymentInfo);
-}
- }
- // NEW: Function to render the Admin Payouts page
- function renderAdminPayouts() {
- contentArea.innerHTML = `
- <div class="space-y-8">
- <div class="bg-white p-6 rounded-xl shadow-md">
- <h3 class="text-xl font-semibold text-gray-800 mb-4">Pending Payout
- Requests</h3>
-<div id="admin-payouts-list" class="space-y-4"><p>Loading payout
- requests...</p></div>
- </div>
- <div class="bg-white p-6 rounded-xl shadow-md">
- <h3 class="text-xl font-semibold text-gray-800 mb-4">Payout History (Last 50)</h3>
- <div id="admin-payouts-history" class="space-y-2"><p>Loading history...</p></div>
- </div>
- </div>`;
- const q = query(collection(db, "payouts"), where("status", "==", "pending"), orderBy("requestedAt", "asc"));
- onSnapshot(q, (snapshot) => {
- const listEl = document.getElementById('admin-payouts-list');
- if (!listEl) return;
- if (snapshot.empty) {
- listEl.innerHTML = `<p class="text-gray-500">No pending payout requests.</p>`;
- return;
- }
- const payoutPromises = snapshot.docs.map(doc => {
- const payout = { id: doc.id, ...doc.data() };
- return getDoc(doc(db, "users", payout.userId)).then(userDoc => {
- return { ...payout, userData: userDoc.data() };
- });
- });
- Promise.all(payoutPromises).then(payouts => {
- listEl.innerHTML = payouts.map(payout => {
- let payoutDetails = 'Payout method not specified.';
- const userData = payout.userData;
- if (userData && userData.payoutMethod === 'paypal') {
-payoutDetails = `<strong>PayPal:</strong> ${userData.paypalEmail}`;
- } else if (userData && userData.payoutMethod === 'check') {
- payoutDetails = `<strong>Check to:</strong>
- ${userData.legalName}<br><strong>Address:</strong> ${userData.mailingAddress}`;
-}
- return `
- <div class="p-4 border rounded-lg bg-gray-50">
- <div class="flex flex-col md:flex-row md:items-center md:justify-between">
-<div>
- <p class="font-bold text-lg
- text-gray-800">$${payout.amount.toFixed(2)}</p>
- <p class="text-sm text-gray-600">To: <strong>${payout.userName ||
-payout.userEmail}</strong></p>
- <p class="text-sm text-gray-500 mt-1">Requested on: ${new
- Date(payout.requestedAt.seconds * 1000).toLocaleDateString()}</p>
- </div>
- <div class="my-3 md:my-0 text-sm p-3 bg-gray-100 rounded-md">${payoutDetails}</div>
- <div class="flex items-center gap-2">
- <button onclick="handlePayoutAction('${payout.id}', 'approve', '${payout.userId}', ${payout.amount})" class="btn-primary px-3 py-1 rounded-md text-sm">Approve</button>
- <button onclick="handlePayoutAction('${payout.id}', 'reject', '${payout.userId}', ${payout.amount})" class="btn-secondary px-3 py-1 rounded-md text-sm">Reject</button>
- </div>
- </div>
- </div>`;
- }).join('');
- });
- });
- const historyQuery = query(collection(db, "payouts"), where("status", "!=", "pending"), orderBy("status", "desc"), orderBy("requestedAt", "desc"));
- onSnapshot(historyQuery, (snapshot) => {
- const historyEl = document.getElementById('admin-payouts-history');
- if (!historyEl) return;
- if (snapshot.empty) {
- historyEl.innerHTML = `<p class="text-gray-500">No payout history found.</p>`;
- return;
- }
-const historyHtml = snapshot.docs.map(doc => {
- const payout = { id: doc.id, ...doc.data() };
- const isApproved = payout.status === 'approved';
- const statusClass = isApproved ? 'text-green-600 bg-green-100' : 'text-red-600
- bg-red-100';
- return `
-<div class="p-3 border rounded-md flex justify-between items-center">
- <div>
- <p class="font-semibold">$${payout.amount.toFixed(2)} to
- ${payout.userName}</p>
-<p class="text-xs text-gray-500">${new Date(payout.requestedAt.seconds *
- 1000).toLocaleString()}</p>
- </div>
- <span class="text-xs font-medium px-2.5 py-0.5 rounded-full
- ${statusClass}">${payout.status}</span>
- </div>`;
-}).join('');
- historyEl.innerHTML = historyHtml;
- });
- }
- 
- // --- Core Render Functions (Modified) ---
- function renderDashboard() {
- contentArea.innerHTML = `
- <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
- <div class="bg-white p-6 rounded-xl shadow-md">
- <h3 class="text-lg font-semibold text-gray-600">Total Releases</h3>
- <p id="total-releases" class="text-4xl font-bold text-gray-800 mt-2">0</p>
- </div>
- <div class="bg-white p-6 rounded-xl shadow-md">
- <h3 class="text-lg font-semibold text-gray-600">Live on Stores</h3>
- <p id="live-releases" class="text-4xl font-bold text-gray-800 mt-2">0</p>
- </div>
- <div class="bg-white p-6 rounded-xl shadow-md">
- <h3 class="text-lg font-semibold text-gray-600">Current Balance</h3>
- <p id="user-balance" class="text-4xl font-bold theme-text mt-2">$0.00</p>
- </div>
- </div>
- <div class="mt-8 bg-white p-6 rounded-xl shadow-md">
- <h3 class="text-xl font-semibold text-gray-800 mb-4">Recent Releases</h3>
- <div id="recent-releases-list" class="space-y-4"></div>
- </div>`;
- onSnapshot(doc(db, "users", currentUser.uid), (doc) => {
- const balance = doc.exists() && doc.data().balance ? doc.data().balance : 0;
- document.getElementById('user-balance').textContent = `$${balance.toFixed(2)}`;
- });
-const q = query(collection(db, "releases"), where("userId", "==", currentUser.uid),
- orderBy("createdAt", "desc"));
-onSnapshot(q, (querySnapshot) => {
- const releases = querySnapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
- document.getElementById('total-releases').textContent = releases.length;
- document.getElementById('live-releases').textContent = releases.filter(r => r.status ===
- 'delivered').length;
- const recentList = document.getElementById('recent-releases-list');
- if 
- (releases.length > 0) {
-recentList.innerHTML = releases.slice(0, 3).map(release =>
- renderReleaseCard(release, false)).join('');
- } else {
- recentList.innerHTML = `<p class="text-gray-500">You haven't created any releases
- yet.</p>`;
- }
- });
-}
- function renderCreateReleaseForm() {
- const genres = ['Electronic', 'Hip-Hop/Rap', 'Pop', 'R&B/Soul', 'Rock', 'Alternative', 'Country', 'Folk', 'Jazz', 'Classical', 'Other'];
- const commonDsps = ['Amazon Music', 'Anghami', 'Apple Music', 'Audiomack', 'Deezer', 'Facebook/Instagram', 'Pandora', 'Shazam', 'Spotify', 'Tidal', 'TikTok', 'YouTube Music'];
- contentArea.innerHTML = `
- <form id="create-release-form" class="space-y-8 bg-white p-8 rounded-xl shadow-md">
- <div>
- <h3 class="text-xl font-semibold text-gray-800">1. Audio & Artwork</h3>
- <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
- <div>
- <label class="block text-sm font-medium text-gray-700 mb-1">Audio File (WAV/FLAC only)</label>
- <input type="file" id="audio-file" required accept=".wav,.flac" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100">
- <div id="audio-upload-progress" class="progress-bar mt-2 h-2.5 w-full hidden"><div class="progress-bar-inner"></div></div>
- </div>
- <div>
-<label class="block text-sm font-medium text-gray-700 mb-1">Artwork
- (JPG/PNG, 3000x3000px)</label>
- <img id="artwork-preview" class="h-32 w-32 rounded-lg object-cover
- bg-gray-100 mb-2 hidden" src="#" alt="Artwork Preview">
- <input type="file" id="artwork-file" required class="block w-full text-sm
- text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm
- file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100">
-<div id="artwork-upload-progress" class="progress-bar mt-2 h-2.5 w-full
- hidden"><div class="progress-bar-inner"></div></div>
- </div>
- </div>
- <div class="mt-6">
-<label class="block text-sm font-medium text-gray-700 mb-1">Supporting
- Documentation (optional)</label>
- <p class="text-xs text-gray-500 mb-2">Upload proof of rights, sample clearance, etc. (PDF, DOCX)</p>
- <input type="file" id="docs-file" accept=".pdf,.doc,.docx" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-gray-50 file:text-gray-700 hover:file:bg-gray-100">
- <div id="docs-upload-progress" class="progress-bar mt-2 h-2.5 w-full hidden"><div class="progress-bar-inner"></div></div>
- </div>
- </div>
- <div class="border-t pt-8">
- <h3 class="text-xl font-semibold text-gray-800">2. Release Information</h3>
- <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
- <div><label class="block text-sm font-medium text-gray-700">Song Title</label><input type="text" id="song-title" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 sm:text-sm"></div>
- <div><label class="block text-sm font-medium text-gray-700">Primary Artist</label><input type="text" id="primary-artist" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 sm:text-sm"></div>
- <div class="md:col-span-2"><label class="block text-sm font-medium text-gray-700">Featured Artists (comma-separated)</label><input type="text" id="featured-artists" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 sm:text-sm"></div>
-<div><label class="block text-sm font-medium text-gray-700">Release
- Date</label><input type="date" id="release-date" required class="mt-1 block w-full rounded-md
- border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 sm:text-sm"></div>
- <div><label class="block text-sm font-medium
- text-gray-700">Genre</label><select id="genre" required class="mt-1 block w-full rounded-md
- border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500
- sm:text-sm">${genres.map(g => `<option value="${g}">${g}</option>`).join('')}</select></div>
- <div id="other-genre-container" class="hidden md:col-span-2"><label
- class="block text-sm font-medium text-gray-700">Please specify genre</label><input
- type="text" id="other-genre-specify" class="mt-1 block w-full 
-rounded-md border-gray-300
- shadow-sm"></div>
- <div class="md:col-span-2"><label class="block text-sm font-medium
- text-gray-700">Has this release been available on stores before?</label>
- <div class="mt-2 flex gap-4"><label><input type="radio" name="released-before" value="no" checked> No</label><label><input type="radio" name="released-before" value="yes"> Yes</label></div>
- </div>
- <div id="original-release-date-container" class="hidden"><label class="block text-sm font-medium text-gray-700">Original Release Date</label><input type="date" id="original-release-date" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></div>
- <div><label class="block text-sm font-medium text-gray-700">Record Label</label><input type="text" id="record-label" required value="Browncow Distribution" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></div>
- </div>
- </div>
- <div class="border-t pt-8">
- <h3 class="text-xl font-semibold text-gray-800">3. Artist Profiles</h3>
- <div class="mt-4 space-y-6">
- <div>
- <label class="block text-sm font-medium text-gray-700">Spotify Artist Profile URL</label>
- <div class="flex items-center gap-2"><input type="url" id="spotify-link" required placeholder="https://open.spotify.com/artist/..." class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"><button type="button" onclick="alert('A new artist profile will be created on Spotify.')" class="btn-secondary px-3 py-2 rounded-md text-sm whitespace-nowrap">Create New</button></div>
- </div>
- <div>
-<label class="block text-sm font-medium text-gray-700">Apple Music Artist
- Profile URL</label>
- <div class="flex items-center gap-2"><input type="url" id="apple-link" required
- placeholder="https://music.apple.com/us/artist/..." class="mt-1 block w-full rounded-md
- border-gray-300 shadow-sm"><button type="button" onclick="alert('A new artist profile will be
- created on Apple Music.')" class="btn-secondary px-3 py-2 rounded-md text-sm
- whitespace-nowrap">Create New</button></div>
- </div>
-<div>
- <label class="block text-sm font-medium text-gray-700">YouTube Music Artist
- Profile URL</label>
- <div class="flex items-center gap-2"><input type="url" id="youtube-link"
- required placeholder="https://music.youtube.com/channel/..." class="mt-1 block w-full
- rounded-md border-gray-300 shadow-sm"><button 
-type="button" onclick="alert('A new artist profile will be created on YouTube Music.')" class="btn-secondary px-3 py-2 rounded-md text-sm whitespace-nowrap">Create New</button></div>
- </div>
- </div>
- </div>
- <div class="border-t pt-8">
- <h3 class="text-xl font-semibold text-gray-800">4. Stores & Rights Management</h3>
- <div class="mt-4">
- <label class="block text-sm font-medium text-gray-700">Select Stores</label>
- <div class="mt-2 grid grid-cols-2 md:grid-cols-4 gap-4">
- ${commonDsps.map(dsp => `<div><label class="flex items-center"><input type="checkbox" name="dsp" value="${dsp}" checked class="h-4 w-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"> <span class="ml-2 text-sm text-gray-600">${dsp}</span></label></div>`).join('')}
- </div>
- </div>
- <div class="mt-6">
- <label class="block text-sm font-medium text-gray-700">Rights Management</label>
- <div class="mt-2 space-y-2">
- <div><label class="flex items-center"><input type="checkbox" id="youtube-content-id" class="h-4 w-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"> <span class="ml-2 text-sm text-gray-600">YouTube Content ID</span></label></div>
- <div><label class="flex items-center"><input type="checkbox" id="facebook-fingerprinting" class="h-4 w-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"> <span class="ml-2 text-sm text-gray-600">Facebook/Instagram Fingerprinting</span></label></div>
- </div>
- </div>
-<div id="rights-management-agreement" class="hidden mt-6 p-4 border-l-4
- border-red-400 bg-red-50">
- <h4 
- class="font-bold text-red-800">Important Certification Required</h4>
- <div class="mt-2 flex items-start">
- <input type="checkbox" id="rights-agreement-checkbox" 
-required class="h-4
- w-4 
- mt-1 rounded border-gray-300 text-purple-600 focus:ring-purple-500">
- <label for="rights-agreement-checkbox" class="ml-3 block text-sm
- text-red-700">
- By checking this box, I certify that everything in my song is 100% original,
- no loops or samples were used, and that 
-I have 100% of the rights to the audio. I understand
- that if caught uploading fraudulent content, my account will be terminated and I will be
- responsible for any resulting legal fees.
-</label>
- </div>
- </div>
- </div>
- <div class="border-t pt-8">
- <button type="submit" id="submit-release-btn" class="w-full btn-primary py-3 px-5 text-base font-bold rounded-lg">Submit for Review</button>
- </div>
- </form>`;
- document.getElementById('create-release-form').addEventListener('submit', handleCreateRelease);
- // Event Listeners for form logic
- document.getElementById('artwork-file').addEventListener('change', (e) => {
- const preview = document.getElementById('artwork-preview');
- if (e.target.files[0]) {
- preview.src = URL.createObjectURL(e.target.files[0]);
- preview.classList.remove('hidden');
- }
- });
- document.getElementById('genre').addEventListener('change', (e) => {
- const isOther = e.target.value === 'Other';
- document.getElementById('other-genre-container').classList.toggle('hidden', !isOther);
-document.getElementById('other-genre-specify').required = isOther;
- });
- // Released Before -> Original Date
- document.querySelectorAll('input[name="released-before"]').forEach(radio => {
- radio.addEventListener('change', (e) => {
- const needsDate = e.target.value === 'yes';
- document.getElementById('original-release-date-container').classList.toggle('hidden',
- !needsDate);
- document.getElementById('original-release-date').required = needsDate;
-});
- });
-// Rights Management -> Agreement Checkbox
- const toggleRightsAgreement = () => {
- const fbChecked = document.getElementById('facebook-fingerprinting').checked;
-const ytChecked = document.getElementById('youtube-content-id').checked;
- const needsAgreement = fbChecked || ytChecked;
- document.getElementById('rights-management-agreement').classList.toggle('hidden', !needsAgreement);
- document.getElementById('rights-agreement-checkbox').required = needsAgreement;
- };
- document.getElementById('youtube-content-id').addEventListener('change', toggleRightsAgreement);
- document.getElementById('facebook-fingerprinting').addEventListener('change', toggleRightsAgreement);
- }
- function renderMyReleases() {
- contentArea.innerHTML = `<div id="my-releases-list" class="space-y-4"></div>`;
- const q = query(collection(db, "releases"), where("userId", "==", currentUser.uid), orderBy("createdAt", "desc"));
- onSnapshot(q, (snapshot) => {
- const listEl = document.getElementById('my-releases-list');
- if (!listEl) return;
- if (snapshot.empty) {
- listEl.innerHTML = `<p class="text-gray-500">You haven't submitted any releases yet.</p>`;
- } else {
- listEl.innerHTML = snapshot.docs.map(doc => renderReleaseCard({ id: doc.id, ...doc.data() })).join('');
- }
- });
-}
- async function renderReleaseDetails(releaseId) {
- contentArea.innerHTML = `<p>Loading release details...</p>`;
-const releaseDoc = await getDoc(doc(db, "releases", releaseId));
- if 
- (!releaseDoc.exists()) {
- contentArea.innerHTML = `<p>Release not found.</p>`;
-return;
- }
- const release = releaseDoc.data();
-contentArea.innerHTML = `
- <div class="bg-white p-8 rounded-xl shadow-md">
- <div class="flex flex-col md:flex-row gap-8">
- <img src="${release.artworkUrl}" alt="Artwork" class="w-full md:w-64 h-auto
- md:h-64 rounded-xl object-cover shadow-lg">
- <div class="flex-1">
-<h2 
- class="text-3xl font-bold text-gray-900">${release.songTitle}</h2>
- <p class="text-xl text-gray-600 mt-1">${release.primaryArtist}</p>
- <div class="mt-4 pt-4 border-t">
-<p class="text-sm text-gray-500"><strong class="text-gray-700">Release Date:</strong> ${release.releaseDate}</p>
- <p class="text-sm text-gray-500"><strong class="text-gray-700">Genre:</strong> ${release.genre}</p>
- <p class="text-sm text-gray-500"><strong class="text-gray-700">UPC:</strong> ${release.upc || 'Pending'}</p>
- <p class="text-sm text-gray-500"><strong class="text-gray-700">ISRC:</strong> ${release.isrc || 'Pending'}</p>
- </div>
- <div class="mt-4 pt-4 border-t">
- <button onclick="handleViewReleaseDetails('${releaseId}')" class="btn-secondary py-2 px-4 rounded-md">View Full Metadata</button>
- </div>
- </div>
- </div>
- </div>`;
- }
- function renderAnalytics() {
- contentArea.innerHTML = `<div class="bg-white p-8 rounded-xl shadow-md"><h2 class="text-2xl font-bold text-gray-800">Analytics</h2><p class="mt-4 text-gray-600">Analytics feature is coming soon.</p></div>`;
- }
- function renderPayouts() {
- contentArea.innerHTML = `<div id="payouts-container" class="bg-white p-8 rounded-xl shadow-md max-w-3xl mx-auto"></div>`;
- const userRef = doc(db, "users", currentUser.uid);
-onSnapshot(userRef, async (userDoc) => {
- const container = document.getElementById('payouts-container');
- if 
- (!container) return;
- const userData = userDoc.exists() ? userDoc.data() : { balance: 0 };
- const balance = userData.balance || 0;
- if 
- (!userData.payoutMethod) {
-container.innerHTML = `
- <h2 
- class="text-2xl font-bold text-gray-800 mb-4">Payouts</h2>
- <div class="p-4 text-sm text-red-800 rounded-lg bg-red-100" role="alert">
- You must set up a payout method before you can request your earnings.
-</div>
- <button onclick="navigateTo('account-settings')" class="mt-6 btn-primary py-2 px-4
- rounded-md">Go to Account Settings</button>`;
-return;
- }
- const payoutsQuery = query(collection(db, "payouts"), where("userId", "==",
- currentUser.uid), orderBy("requestedAt", "desc"));
- const payoutsSnapshot = await getDocs(payoutsQuery);
- const payouts = payoutsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
- const hasPendingRequest = payouts.some(p => p.status === 'pending');
- let historyHtml = '<p class="text-gray-500">No payout history.</p>';
- if (payouts.length > 0) {
- historyHtml = payouts.map(p => {
- let statusHtml, reasonHtml = '', approvedMsg = '';
- switch (p.status) {
- case 'pending': statusHtml = `<span class="bg-yellow-100 text-yellow-800">${p.status}</span>`; break;
- case 'approved':
- statusHtml = `<span class="bg-green-100 text-green-800">${p.status}</span>`;
- approvedMsg = `<div class="text-xs text-gray-500 mt-1 p-2 bg-green-50 rounded-md">Approved! Your funds are on the way. Please allow 3-5 business days.</div>`;
- break;
- case 'rejected':
- statusHtml = `<span class="bg-red-100 text-red-800">${p.status}</span>`;
- reasonHtml = p.rejectionReason ? `<div class="text-xs text-red-700 mt-1 p-2 bg-red-50 rounded-md"><strong>Reason:</strong> ${p.rejectionReason}</div>` : '';
- break;
- default: statusHtml = `<span>${p.status}</span>`;
- }
- return `<div class="p-3 border rounded-lg">
- <div class="flex justify-between items-center">
-<div>
- <p class="font-semibold">$${p.amount.toFixed(2)}</p>
- <p class="text-xs text-gray-500">${new Date(p.requestedAt.seconds *
- 1000).toLocaleDateString()}</p>
-</div>
- <span class="text-xs font-medium px-2.5 py-0.5
- rounded-full">${statusHtml}</span>
- </div>
- ${reasonHtml}
-${approvedMsg}
- </div>`;
-}).join('');
- }
- container.innerHTML = `
- <h2 
- class="text-2xl font-bold text-gray-800 mb-2">Your Earnings</h2>
- <p class="text-5xl font-bold theme-text mb-6">$${balance.toFixed(2)}</p>
- <button id="request-payout-btn" class="w-full btn-primary py-3 px-4 rounded-lg
- font-bold" ${balance <= 0 ||
-hasPendingRequest ? 'disabled' : ''}>
- ${hasPendingRequest ?
-'Payout Request Pending' : `Request Payout of $${balance.toFixed(2)}`}
- </button>
- <div class="mt-8">
- <h3 class="text-xl font-semibold text-gray-800 mb-4">Payout History</h3>
- <div class="space-y-3">${historyHtml}</div>
- </div>`;
- if (balance > 0 && !hasPendingRequest) {
- document.getElementById('request-payout-btn').addEventListener('click', () => handleRequestPayout(balance));
- }
- });
- }
- function renderAdminReleases() {
- contentArea.innerHTML = `<div class="bg-white p-6 rounded-xl shadow-md"><h3 class="text-xl font-semibold text-gray-800 mb-4">All User Releases</h3><div id="admin-releases-list" class="space-y-4"></div></div>`;
- const q = query(collection(db, "releases"), orderBy("createdAt", "desc"));
- onSnapshot(q, (snapshot) => {
- const releases = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
- const listEl = document.getElementById('admin-releases-list');
- if (!listEl) return;
-listEl.innerHTML = releases.length > 0 ? releases.map(renderAdminReleaseCard).join('')
- : 
- `<p>No releases found.</p>`;
- });
-}
- function renderAdminUsers() {
- contentArea.innerHTML = `
- <div class="bg-white p-6 rounded-xl shadow-md mb-8">
- <h3 class="text-xl font-semibold text-gray-800 mb-4">Manage User Balances</h3>
- <div id="admin-users-list" class="space-y-4"><p>Loading users...</p></div>
- </div>`;
-const usersQuery = query(collection(db, "users"), orderBy("name", "asc"));
- onSnapshot(usersQuery, (snapshot) => {
- const users = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
- const listEl = document.getElementById('admin-users-list');
- if(!listEl) return;
- listEl.innerHTML = users.length > 0 ? users.map(user => `
- <div class="p-4 
-border rounded-lg flex flex-col md:flex-row items-center
- justify-between">
- <div>
- <p class="font-semibold text-gray-800">${user.name}</p>
- <p class="text-sm text-gray-500">${user.email}</p>
- </div>
- <div class="flex items-center gap-4 mt-4 md:mt-0">
- <span class="font-bold text-lg">Balance: $${(user.balance || 0).toFixed(2)}</span>
- <div class="flex items-center gap-2">
- <input type="number" id="balance-adj-${user.id}" class="w-24 p-1 border rounded-md" placeholder="Amount">
- <button onclick="handleUpdateBalance('${user.id}', 'add')" class="bg-green-500 text-white px-3 py-1 rounded-md text-sm">Add</button>
- <button onclick="handleUpdateBalance('${user.id}', 'subtract')" class="bg-red-500 text-white px-3 py-1 rounded-md text-sm">Subtract</button>
- </div>
- </div>
- </div>`).join('') : '<p>No users found.</p>';
- });
- }
- 
- // --- Helper & Handler Functions ---
- function showToast(message, type = 'success') {
- toastMessage.textContent = message;
- toast.className = `fixed top-5 right-5 text-white py-2 px-4 rounded-lg shadow-lg transition-opacity duration-300 ${type === 'error' ? 'bg-red-500' : 'bg-green-500'}`;
- toast.classList.remove('hidden');
- setTimeout(() => toast.classList.add('hidden'), 3000);
- }
- function showLoading(isLoading) {
- if (isLoading) {
- loadingOverlay.classList.remove('hidden');
- } else {
- loadingOverlay.classList.add('hidden');
- }
- }
-async function handleSavePaymentInfo(e) {
- e.preventDefault();
- showLoading(true);
- const method = e.target.querySelector('input[name="payoutMethod"]:checked').value;
-const updateData = { payoutMethod: method };
- if 
- (method === 'paypal') {
- updateData.paypalEmail = document.getElementById('paypalEmail').value;
-} else {
- updateData.legalName = document.getElementById('legalName').value;
- updateData.mailingAddress = document.getElementById('mailingAddress').value;
-}
- try {
- await updateDoc(doc(db, "users", currentUser.uid), updateData);
-showToast('Payout information saved successfully!', 'success');
- renderAccountSettings(); // Re-render the view to show the saved info
- } catch (error) {
- console.error("Error saving payment info:", error);
-showToast('Failed to save payout information.', 'error');
- } finally {
- showLoading(false);
- }
- }
- async function handleCreateRelease(e) {
- e.preventDefault();
- showLoading(true);
- const submitBtn = document.getElementById('submit-release-btn');
- submitBtn.disabled = true;
- submitBtn.textContent = 'Uploading...';
- const audioFile = document.getElementById('audio-file').files[0];
- const artworkFile = document.getElementById('artwork-file').files[0];
- const docsFile = document.getElementById('docs-file').files[0];
- if (!audioFile || !artworkFile) {
- showToast('Audio and Artwork files are required.', 'error');
- showLoading(false);
- return;
- }
- try {
- const uploadPromises = [
- uploadToCloudinary(audioFile, 'audio-upload-progress'),
- uploadToCloudinary(artworkFile, 'artwork-upload-progress')
- ];
-if 
- (docsFile) {
- uploadPromises.push(uploadToCloudinary(docsFile, 'docs-upload-progress'));
-}
- const [audioUrl, artworkUrl, docsUrl] = await Promise.all(uploadPromises);
-if 
- (!audioUrl || !artworkUrl) {
- showToast('File upload failed. Please try again.', 'error');
-showLoading(false);
- submitBtn.disabled = false;
- submitBtn.textContent = 'Submit for Review';
- return;
- }
- const genreSelect = document.getElementById('genre');
-const releaseData = {
- userId: currentUser.uid,
- userName: currentUser.displayName,
- songTitle: document.getElementById('song-title').value,
- primaryArtist: document.getElementById('primary-artist').value,
- featuredArtists: document.getElementById('featured-artists').value,
-releaseDate: document.getElementById('release-date').value,
- genre: genreSelect.value === 'Other' ?
-document.getElementById('other-genre-specify').value : genreSelect.value,
- originalReleaseDate: document.querySelector('input[name="released-before"]:checked').value === 'yes' ? document.getElementById('original-release-date').value : null,
- recordLabel: document.getElementById('record-label').value,
- spotifyLink: document.getElementById('spotify-link').value,
- appleLink: document.getElementById('apple-link').value,
- youtubeLink: document.getElementById('youtube-link').value,
- stores: Array.from(document.querySelectorAll('input[name="dsp"]:checked')).map(el => el.value),
- rights: {
- youtube: document.getElementById('youtube-content-id').checked,
- facebook: document.getElementById('facebook-fingerprinting').checked,
- },
- audioUrl: audioUrl,
- artworkUrl: artworkUrl,
- docsUrl: docsUrl || null,
- status: 'pending',
- createdAt: serverTimestamp()
- };
-await addDoc(collection(db, "releases"), releaseData);
- showToast('Release submitted successfully for review!', 'success');
- navigateTo('my-releases');
-} catch (error) {
- console.error("Error creating release:", error);
-showToast(`Error: ${error.message}`, 'error');
- } finally {
- showLoading(false);
- submitBtn.disabled = false;
- submitBtn.textContent = 'Submit for Review';
-}
- };
- async function handleRequestPayout(balance) {
- if 
- (balance <= 0) {
- showToast("You have no balance to withdraw.", 'error');
-return;
- }
- if 
- (confirm(`You are about to request a payout for your entire balance of
- $${balance.toFixed(2)}. Do you want to continue?`)) {
- showLoading(true);
-try {
- await addDoc(collection(db, "payouts"), {
- userId: currentUser.uid,
- userName: currentUser.displayName,
- userEmail: currentUser.email,
-amount: balance,
- status: 'pending',
- requestedAt: serverTimestamp()
- });
- showToast('Payout requested successfully.', 'success');
- renderPayouts(); // Re-render to show pending status
- } catch (error) {
- console.error("Payout request error:", error);
- showToast('Failed to request payout.', 'error');
- } finally {
- showLoading(false);
- }
- }
- }
- window.handleDeleteRelease = async (releaseId) => {
- if (confirm('Are you sure you want to permanently delete this release? This action cannot be undone.')) {
- showLoading(true);
- try {
-await deleteDoc(doc(db, "releases", releaseId));
- showToast('Release deleted successfully.', 'success');
- } catch (error) {
- console.error("Error deleting release:", error);
-showToast('Failed to delete release.', 'error');
- } finally {
- showLoading(false);
-}
- }
- };
-window.handleReleaseStatusUpdate = async (releaseId, newStatus) => {
- const confirmMsg = newStatus === 'taken down' ?
-'Are you sure you want to request a
- takedown for this release?'
-: `Are you sure you want to update status to '${newStatus}'?`;
-if 
- (confirm(confirmMsg)) {
- showLoading(true);
-try {
- await updateDoc(doc(db, "releases", releaseId), { status: newStatus });
-showToast(`Release status updated to '${newStatus}'.`, 'success');
- } catch (error) {
- console.error("Status update error:", error);
- showToast('Failed to update status.', 'error');
- } finally {
- showLoading(false);
- }
- }
- };
- window.handleUpdateBalance = async (userId, action) => {
- const amountInput = document.getElementById(`balance-adj-${userId}`);
- const amount = parseFloat(amountInput.value);
- if (isNaN(amount) || amount <= 0) {
- showToast('Please enter a valid positive amount.', 'error');
- return;
- }
- const newBalance = action === 'add' ? increment(amount) : increment(-amount);
- showLoading(true);
- try {
- await updateDoc(doc(db, "users", userId), { balance: newBalance });
- showToast('Balance updated successfully.', 'success');
- amountInput.value = '';
-} catch (error) {
- console.error("Balance update error:", error);
-showToast('Failed to update balance.', 'error');
- } finally {
- showLoading(false);
-}
- };
- // NEW: Reworked payout handling for Admins
- window.handlePayoutAction = async (payoutId, action, userId, amount) => {
- if 
- (action === 'approve') {
- if 
- (confirm('Are you sure you want to approve this payout? This will deduct the balance
- from the user account.')) {
- showLoading(true);
-try {
- const userRef = doc(db, "users", userId);
-const userDoc = await getDoc(userRef);
- if 
- (userDoc.exists() && userDoc.data().balance >= amount) {
- await updateDoc(userRef, { balance: increment(-amount) });
-await updateDoc(doc(db, "payouts", payoutId), { status: 'approved' });
- showToast('Payout approved and user balance updated.', 'success');
- } else {
- showToast('User has insufficient funds. Payout rejected.', 'error');
- await updateDoc(doc(db, "payouts", payoutId), { status: 'rejected', rejectionReason: 'Insufficient funds at time of approval.' });
- }
- } catch (error) {
- console.error("Payout approval error:", error);
- showToast('Failed to approve payout.', 'error');
- } finally {
- showLoading(false);
- }
- }
- } else if (action === 'reject') {
- const reason = prompt('Please provide a reason for rejecting this payout:');
- if (reason) {
- showLoading(true);
- try {
- await updateDoc(doc(db, "payouts", payoutId), { status: 'rejected', rejectionReason: reason });
- showToast('Payout rejected.', 'success');
- } catch (error) {
- console.error("Payout rejection error:", error);
- showToast('Failed to reject payout.', 'error');
- } finally {
- showLoading(false);
- }
- }
-}
- };
-// NEW: Function to open the read-only release details modal
- window.handleViewReleaseDetails = async (releaseId) => {
- const releaseDoc = await getDoc(doc(db, "releases", releaseId));
-if 
- (releaseDoc.exists()) {
- const data = releaseDoc.data();
-document.getElementById('view-songTitle').value = data.songTitle || '';
- document.getElementById('view-primaryArtist').value = data.primaryArtist || '';
- document.getElementById('view-featuredArtists').value = data.featuredArtists || '';
- document.getElementById('view-releaseDate').value = data.releaseDate || '';
-document.getElementById('view-genre').value = data.genre || '';
- document.getElementById('view-recordLabel').value = data.recordLabel || '';
- document.getElementById('view-upc').value = data.upc || 'Auto-generated';
- document.getElementById('view-isrc').value = data.isrc || 'Auto-generated';
- document.getElementById('view-spotifyLink').value = data.spotifyLink || '';
- document.getElementById('view-appleLink').value = data.appleLink || '';
- document.getElementById('view-youtubeLink').value = data.youtubeLink || '';
- document.getElementById('release-details-modal').style.display = 'block';
- } else {
- showToast('Could not find release details.', 'error');
- }
- };
- function uploadToCloudinary(file, progressElementId) {
- return new Promise((resolve, reject) => {
-const progressBarContainer = document.getElementById(progressElementId);
- const progressBarInner = progressBarContainer.querySelector('.progress-bar-inner');
- progressBarContainer.classList.remove('hidden');
- progressBarInner.style.width = '0%';
- progressBarInner.style.backgroundColor = '#5a4ae3';
- const formData = new FormData();
-formData.append('file', file);
- formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
- const xhr = new XMLHttpRequest();
- xhr.open('POST',
- `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/upload`, true);
-xhr.upload.onprogress = (event) => {
- if 
- (event.lengthComputable) {
- const percentComplete = (event.loaded / event.total) * 100;
-progressBarInner.style.width = `${percentComplete}%`;
- }
- };
-xhr.onload = () => {
- if (xhr.status === 200) {
- const response = JSON.parse(xhr.responseText);
- progressBarInner.style.backgroundColor = '#22c55e'; // Green for success
- resolve(response.secure_url);
- } else {
- progressBarInner.style.backgroundColor = '#ef4444'; // Red for error
- reject(`Upload failed: ${xhr.statusText}`);
- }
- };
- xhr.onerror = () => {
- progressBarInner.style.backgroundColor = '#ef4444';
- reject('Upload failed due to a network error.');
- };
- xhr.send(formData);
- });
- }
- 
- // --- Component Rendering Functions ---
- function renderReleaseCard(release) {
- const statusColors = {
- pending: 'bg-yellow-100 text-yellow-800',
- approved: 'bg-blue-100 text-blue-800',
- delivered: 'bg-green-100 text-green-800',
- rejected: 'bg-red-100 text-red-800',
- 'taken down': 'bg-gray-100 text-gray-800'
- };
-const canView = ['approved', 'delivered', 'taken down', 'rejected', 'pending'].includes(release.status);
- return `
- <div class="p-4 border rounded-lg bg-white shadow-sm flex flex-col md:flex-row items-start
- md:items-center gap-4">
- <div class="flex items-center gap-4 flex-1">
- <img src="${release.artworkUrl}" alt="Artwork" class="w-12 h-12 rounded-md
- object-cover">
- <div>
-<p class="font-semibold text-gray-800">${release.songTitle}</p>
- <p class="text-sm text-gray-500">${release.primaryArtist} &bull;
-Release:
- ${release.releaseDate}</p>
- </div>
- </div>
- <div class="flex items-center gap-4 mt-2 md:mt-0">
- <span class="text-xs font-medium px-2.5 py-0.5 rounded-full
- ${statusColors[release.status] || ''}">${release.status}</span>
- ${canView ?
-`<button onclick="handleViewReleaseDetails('${release.id}')"
- class="text-sm btn-secondary py-1 px-3 rounded-md">Details</button>` : ''}
- ${release.status === 'delivered' ? `<button onclick="handleReleaseStatusUpdate('${release.id}', 'taken down')" class="text-sm bg-gray-500 hover:bg-gray-600 text-white py-1 px-3 rounded-md">Request Takedown</button>`: ''}
- ${release.status === 'rejected' ? `<button onclick="handleDeleteRelease('${release.id}')" class="text-sm bg-red-500 hover:bg-red-600 text-white py-1 px-3 rounded-md">Delete</button>`: ''}
- </div>
- </div>`;
- }
- function renderAdminReleaseCard(release) {
- let actionsHtml = '';
- switch (release.status) {
- case 'pending':
- actionsHtml = `
- <button onclick="window.handleViewReleaseDetails('${release.id}')" class="bg-gray-200 hover:bg-gray-300 text-gray-800 text-sm font-bold py-1 px-3 rounded-lg">View Details</button>
- <button onclick="window.handleReleaseStatusUpdate('${release.id}', 'approved')" class="bg-blue-500 hover:bg-blue-600 text-white text-sm font-bold py-1 px-3 rounded-lg">Approve</button>
- <button onclick="window.handleReleaseStatusUpdate('${release.id}', 'rejected')" class="bg-red-500 hover:bg-red-600 text-white text-sm font-bold py-1 px-3 rounded-lg">Reject</button>`;
- break;
- case 'approved':
- actionsHtml = `
-<button onclick="window.handleReleaseStatusUpdate('${release.id}', 'delivered')"
- class="bg-green-500 hover:bg-green-600 text-white text-sm font-bold py-1 px-3
- rounded-lg">Mark Delivered</button>
- <button onclick="window.handleReleaseStatusUpdate('${release.id}', 'taken down')"
- class="bg-gray-500 hover:bg-gray-600 text-white text-sm font-bold py-1 px-3 rounded-lg">Take
- Down</button>`;
-break;
- case 'delivered':
- actionsHtml = `<button onclick="window.handleReleaseStatusUpdate('${release.id}',
- 'taken down')" class="bg-gray-500 hover:bg-gray-600 text-white text-sm font-bold py-1 px-3
- rounded-lg">Take Down</button>`;
-break;
- default:
- actionsHtml = `<p class="text-xs text-gray-500">No actions available.</p>`;
-}
- const statusColors = { pending: 'border-yellow-400', approved: 'border-blue-400', delivered:
- 'border-green-400', rejected: 'border-red-400', 'taken down': 'border-gray-400' };
- return `
- <div class="p-4 bg-white rounded-xl shadow-md border-l-4 ${statusColors[release.status] || 'border-gray-200'}">
- <div class="flex flex-col md:flex-row md:items-center md:justify-between">
- <div class="flex items-center gap-4">
- <img src="${release.artworkUrl}" alt="Artwork" class="w-16 h-16 rounded-lg object-cover">
- <div>
- <p class="font-bold text-lg text-gray-800">${release.songTitle}</p>
- <p class="text-sm text-gray-600">by <span class="font-medium">${release.primaryArtist}</span></p>
- <p class="text-xs text-gray-500 mt-1">Submitted by: ${release.userName || 'N/A'}</p>
- </div>
- </div>
- <div class="flex items-center gap-2 mt-4 md:mt-0">
- ${actionsHtml}
- </div>
- </div>
- </div>`;
- }
- 
- // --- Initial Page Setup & Event Listeners ---
- document.getElementById('show-signup').addEventListener('click', (e) => {
- e.preventDefault();
- document.getElementById('login-form').classList.add('hidden');
- document.getElementById('signup-form').classList.remove('hidden');
- });
- document.getElementById('show-login').addEventListener('click', (e) => {
- e.preventDefault();
- document.getElementById('signup-form').classList.add('hidden');
- document.getElementById('login-form').classList.remove('hidden');
- });
- document.getElementById('mobile-menu-button').addEventListener('click', () => {
-document.getElementById('mobile-menu').classList.remove('hidden');
- });
- document.getElementById('mobile-menu-close').addEventListener('click', () => {
- document.getElementById('mobile-menu').classList.add('hidden');
- });
-document.getElementById('mobile-menu-overlay').addEventListener('click', () => {
- document.getElementById('mobile-menu').classList.add('hidden');
- });
- </script>
- </body>
- </html>
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    let currentUser = null;
+    let isAdmin = false;
+
+    // --- UI Elements ---
+    const authView = document.getElementById('auth-view');
+    const appView = document.getElementById('app-view');
+    const contentArea = document.getElementById('content-area');
+    const pageTitle = document.getElementById('page-title');
+    const userGreeting = document.getElementById('user-greeting');
+    const loadingOverlay = document.getElementById('loading-overlay');
+    const toast = document.getElementById('toast');
+    const toastMessage = document.getElementById('toast-message');
+
+    // --- Navigation Setup ---
+    const userNavLinks = [
+        { name: 'Dashboard', icon: '<svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 00-1-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>', view: 'user-dashboard' },
+        { name: 'Create Release', icon: '<svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>', view: 'create-release' },
+        { name: 'My Releases', icon: '<svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 6l12-3"></path></svg>', view: 'my-releases' },
+        { name: 'Analytics', icon: '<svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"></path></svg>', view: 'analytics' },
+        { name: 'Payouts', icon: '<svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>', view: 'payouts' },
+        // NEW: Account/Payment Settings Link
+        { name: 'Account', icon: '<svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>', view: 'account-settings' }
+    ];
+    const adminNavLinks = [
+        { name: 'All Releases', icon: '<svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>', view: 'admin-releases' },
+        { name: 'Manage Users', icon: '<svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M15 21a6 6 0 00-9-5.197M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>', view: 'admin-users' },
+        // NEW: Admin Payouts Management Link
+        { name: 'Payouts', icon: '<svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>', view: 'admin-payouts' }
+    ];
+
+    function createNavLink(link, index) {
+        const isActive = index === 0;
+        return `<a href="#" data-view="${link.view}" class="nav-link ${isActive ? 'bg-purple-100 theme-text' : 'text-gray-600'} flex items-center px-4 py-2 text-sm font-medium rounded-md hover:bg-gray-200">${link.icon} ${link.name}</a>`;
+    }
+
+    // --- Authentication Logic ---
+    window.handleLogin = async (e) => {
+        e.preventDefault();
+        showLoading(true);
+        const email = document.getElementById('login-email').value;
+        const password = document.getElementById('login-password').value;
+        try {
+            await signInWithEmailAndPassword(auth, email, password);
+            showToast('Login successful!');
+        } catch (error) {
+            console.error("Login Error:", error);
+            showToast(`Error: ${error.message}`, 'error');
+        } finally {
+            showLoading(false);
+        }
+    };
+
+    window.handleSignup = async (e) => {
+        e.preventDefault();
+        showLoading(true);
+        const name = document.getElementById('signup-name').value;
+        const email = document.getElementById('signup-email').value;
+        const password = document.getElementById('signup-password').value;
+        try {
+            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+            const user = userCredential.user;
+            await updateProfile(user, { displayName: name });
+            await setDoc(doc(db, "users", user.uid), {
+                name: name,
+                email: email,
+                createdAt: serverTimestamp(),
+                isAdmin: false,
+                balance: 0
+            });
+            showToast('Signup successful! Welcome.');
+        } catch (error) {
+            console.error("Signup Error:", error);
+            showToast(`Error: ${error.message}`, 'error');
+        } finally {
+            showLoading(false);
+        }
+    };
+
+    window.handleLogout = async () => {
+        showLoading(true);
+        await signOut(auth);
+        currentUser = null;
+        isAdmin = false;
+        showToast('Logged out successfully.');
+        showLoading(false);
+    };
+
+    onAuthStateChanged(auth, async (user) => {
+        if (user) {
+            showLoading(true);
+            currentUser = user;
+            const userDoc = await getDoc(doc(db, "users", user.uid));
+            if (userDoc.exists() && userDoc.data().isAdmin) {
+                isAdmin = true;
+            } else {
+                isAdmin = false;
+            }
+            if (!user.displayName && userDoc.exists()) {
+                await updateProfile(user, { displayName: userDoc.data().name });
+            }
+            userGreeting.textContent = `Hello, ${user.displayName || user.email}`;
+            setupAppUI();
+            authView.classList.remove('active-view');
+            appView.classList.add('active-view');
+            showLoading(false);
+        } else {
+            currentUser = null;
+            isAdmin = false;
+            authView.classList.add('active-view');
+            appView.classList.remove('active-view');
+        }
+    });
+
+    // --- UI & View Management ---
+    function setupAppUI() {
+        const userNavContainer = document.getElementById('user-nav');
+        const adminNavContainer = document.getElementById('admin-nav');
+        const mobileUserNavContainer = document.getElementById('mobile-user-nav');
+        const mobileAdminNavContainer = document.getElementById('mobile-admin-nav');
+
+        if (isAdmin) {
+            userNavContainer.classList.add('hidden');
+            mobileUserNavContainer.classList.add('hidden');
+            adminNavContainer.classList.remove('hidden');
+            mobileAdminNavContainer.classList.remove('hidden');
+            adminNavContainer.innerHTML = adminNavLinks.map((link, i) => createNavLink(link, i)).join('');
+            mobileAdminNavContainer.innerHTML = adminNavLinks.map((link, i) => createNavLink(link, i)).join('');
+            navigateTo('admin-releases');
+        } else {
+            userNavContainer.classList.remove('hidden');
+            mobileUserNavContainer.classList.remove('hidden');
+            adminNavContainer.classList.add('hidden');
+            mobileAdminNavContainer.classList.add('hidden');
+            userNavContainer.innerHTML = userNavLinks.map((link, i) => createNavLink(link, i)).join('');
+            mobileUserNavContainer.innerHTML = userNavLinks.map((link, i) => createNavLink(link, i)).join('');
+            navigateTo('user-dashboard');
+        }
+
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                navigateTo(link.dataset.view);
+            });
+        });
+    }
+
+    function navigateTo(viewName, id = null) {
+        document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('bg-purple-100', 'theme-text'));
+        document.querySelectorAll(`.nav-link[data-view="${viewName}"]`).forEach(l => l.classList.add('bg-purple-100', 'theme-text'));
+
+        const link = [...userNavLinks, ...adminNavLinks].find(l => l.view === viewName);
+        if (link) pageTitle.textContent = link.name;
+        else if (viewName === 'release-details') pageTitle.textContent = 'Release Details';
+
+        switch(viewName) {
+            case 'user-dashboard': renderUserDashboard(); break;
+            case 'create-release': renderCreateReleaseForm(); break;
+            case 'my-releases': renderMyReleases(); break;
+            case 'release-details': renderReleaseDetails(id); break;
+            case 'analytics': renderAnalytics(); break;
+            case 'payouts': renderPayouts(); break;
+            // NEW: Account Settings case
+            case 'account-settings': renderAccountSettings(); break;
+            case 'admin-releases': renderAdminReleases(); break;
+            case 'admin-users': renderAdminUsers(); break;
+             // NEW: Admin Payouts case
+            case 'admin-payouts': renderAdminPayouts(); break;
+        }
+        document.getElementById('mobile-menu').classList.add('hidden');
+    }
+
+    // --- NEW: Render Functions for New Views ---
+
+    // NEW: Function to render the Account/Payment Settings page
+    async function renderAccountSettings() {
+        contentArea.innerHTML = `<div class="bg-white p-8 rounded-xl shadow-md max-w-2xl mx-auto">Loading account details...</div>`;
+        const userDoc = await getDoc(doc(db, "users", currentUser.uid));
+        const userData = userDoc.exists() ? userDoc.data() : {};
+
+        if (userData.payoutMethod) {
+            // User has already set up payment info
+            let detailsHtml = '';
+            if (userData.payoutMethod === 'paypal') {
+                detailsHtml = `<p><strong>Method:</strong> PayPal</p><p><strong>Email:</strong> ${userData.paypalEmail}</p>`;
+            } else {
+                detailsHtml = `<p><strong>Method:</strong> Paper Check</p><p><strong>Full Legal Name:</strong> ${userData.legalName}</p><p><strong>Mailing Address:</strong> ${userData.mailingAddress}</p>`;
+            }
+            contentArea.innerHTML = `
+                <div class="bg-white p-8 rounded-xl shadow-md max-w-2xl mx-auto">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-4">Your Payout Information</h2>
+                    <div class="space-y-2 text-gray-700">${detailsHtml}</div>
+                    <div class="mt-6 p-4 text-sm text-blue-800 rounded-lg bg-blue-100" role="alert">
+                        To change your payout information, please contact support. This is a security measure to protect your account.
+                    </div>
+                </div>`;
+        } else {
+            // User needs to set up payment info
+            contentArea.innerHTML = `
+                <div class="bg-white p-8 rounded-xl shadow-md max-w-2xl mx-auto">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-6">Setup Your Payout Method</h2>
+                    <p class="text-gray-600 mb-6">You must set up a payout method before you can request your earnings. This information can only be changed by contacting support once saved.</p>
+                    <form id="payout-setup-form">
+                        <div class="space-y-4">
+                            <label class="font-semibold text-gray-700">Choose a method:</label>
+                            <div class="flex items-center gap-4">
+                                <label><input type="radio" name="payoutMethod" value="paypal" class="mr-2" checked> PayPal</label>
+                                <label><input type="radio" name="payoutMethod" value="check" class="mr-2"> Paper Check</label>
+                            </div>
+                        </div>
+                        <div id="paypal-fields" class="mt-4 space-y-4">
+                            <div><label class="block text-sm font-medium text-gray-700">PayPal Email</label><input type="email" id="paypalEmail" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 sm:text-sm"></div>
+                        </div>
+                        <div id="check-fields" class="mt-4 space-y-4 hidden">
+                            <div><label class="block text-sm font-medium text-gray-700">Full Legal Name</label><input type="text" id="legalName" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 sm:text-sm"></div>
+                            <div><label class="block text-sm font-medium text-gray-700">Full Mailing Address</label><textarea id="mailingAddress" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 sm:text-sm"></textarea></div>
+                        </div>
+                        <div class="mt-6">
+                            <button type="submit" class="btn-primary py-2 px-4 rounded-md w-full">Save Payout Information</button>
+                        </div>
+                    </form>
+                </div>`;
+
+            const form = document.getElementById('payout-setup-form');
+            const radios = form.querySelectorAll('input[name="payoutMethod"]');
+            radios.forEach(radio => radio.addEventListener('change', (e) => {
+                const isPaypal = e.target.value === 'paypal';
+                document.getElementById('paypal-fields').classList.toggle('hidden', !isPaypal);
+                document.getElementById('check-fields').classList.toggle('hidden', isPaypal);
+                document.getElementById('paypalEmail').required = isPaypal;
+                document.getElementById('legalName').required = !isPaypal;
+                document.getElementById('mailingAddress').required = !isPaypal;
+            }));
+            form.addEventListener('submit', handleSavePaymentInfo);
+        }
+    }
+
+    // NEW: Function to render the Admin Payouts page
+    function renderAdminPayouts() {
+        contentArea.innerHTML = `
+            <div class="space-y-8">
+                <div class="bg-white p-6 rounded-xl shadow-md">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">Pending Payout Requests</h3>
+                    <div id="admin-payouts-list" class="space-y-4"><p>Loading payout requests...</p></div>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">Payout History</h3>
+                    <div id="admin-payout-history-list" class="space-y-4"><p>Loading payout history...</p></div>
+                </div>
+            </div>`;
+
+        // Fetch and render pending payouts
+        const pendingQuery = query(collection(db, "payouts"), where("status", "==", "pending"), orderBy("requestedAt", "asc"));
+        onSnapshot(pendingQuery, async (snapshot) => {
+            const listEl = document.getElementById('admin-payouts-list');
+            if (!listEl) return;
+            if (snapshot.empty) {
+                listEl.innerHTML = `<p class="text-gray-500">No pending payout requests.</p>`;
+                return;
+            }
+            const payoutPromises = snapshot.docs.map(async (payoutDoc) => {
+                const payout = { id: payoutDoc.id, ...payoutDoc.data() };
+                const userDoc = await getDoc(doc(db, "users", payout.userId));
+                const userData = userDoc.exists() ? userDoc.data() : { payoutMethod: 'N/A' };
+
+                let payoutDetails = 'Not specified.';
+                if (userData.payoutMethod === 'paypal') {
+                    payoutDetails = `<strong>PayPal:</strong> ${userData.paypalEmail}`;
+                } else if (userData.payoutMethod === 'check') {
+                    payoutDetails = `<strong>Check to:</strong> ${userData.legalName}<br><strong>Address:</strong> ${userData.mailingAddress}`;
+                }
+
+                return `
+                    <div class="p-4 border rounded-lg bg-gray-50">
+                        <div class="flex flex-col md:flex-row md:items-center md:justify-between">
+                            <div>
+                                <p class="font-bold text-lg text-gray-800">$${payout.amount.toFixed(2)}</p>
+                                <p class="text-sm text-gray-600">To: <strong>${payout.userName || payout.userEmail}</strong></p>
+                                <p class="text-sm text-gray-500 mt-1">Requested on: ${new Date(payout.requestedAt.seconds * 1000).toLocaleDateString()}</p>
+                            </div>
+                            <div class="text-sm mt-2 md:mt-0 md:text-right text-gray-600">${payoutDetails}</div>
+                            <div class="flex items-center gap-2 mt-4 md:mt-0">
+                                <button onclick="handlePayoutAction('${payout.id}', 'approve', '${payout.userId}', ${payout.amount})" class="bg-green-500 hover:bg-green-600 text-white text-xs font-bold py-1 px-3 rounded-lg">Approve</button>
+                                <button onclick="handlePayoutAction('${payout.id}', 'reject')" class="bg-red-500 hover:bg-red-600 text-white text-xs font-bold py-1 px-3 rounded-lg">Reject</button>
+                            </div>
+                        </div>
+                    </div>`;
+            });
+            const payoutsHtml = await Promise.all(payoutPromises);
+            listEl.innerHTML = payoutsHtml.join('');
+        });
+
+        // Fetch and render payout history
+        const historyQuery = query(collection(db, "payouts"), where("status", "in", ["approved", "rejected"]), orderBy("requestedAt", "desc"));
+        onSnapshot(historyQuery, (snapshot) => {
+            const historyEl = document.getElementById('admin-payout-history-list');
+            if (!historyEl) return;
+            if (snapshot.empty) {
+                historyEl.innerHTML = `<p class="text-gray-500">No payout history found.</p>`;
+                return;
+            }
+            const historyHtml = snapshot.docs.map(doc => {
+                const payout = { id: doc.id, ...doc.data() };
+                const isApproved = payout.status === 'approved';
+                const statusClass = isApproved ? 'text-green-600 bg-green-100' : 'text-red-600 bg-red-100';
+                return `
+                    <div class="p-3 border rounded-md flex justify-between items-center">
+                        <div>
+                            <p class="font-semibold">$${payout.amount.toFixed(2)} to ${payout.userName}</p>
+                            <p class="text-xs text-gray-500">${new Date(payout.requestedAt.seconds * 1000).toLocaleString()}</p>
+                        </div>
+                        <span class="text-xs font-medium px-2.5 py-0.5 rounded-full ${statusClass}">${payout.status}</span>
+                    </div>`;
+            }).join('');
+            historyEl.innerHTML = historyHtml;
+        });
+    }
+
+    // --- Core Render Functions (Modified) ---
+
+    async function renderUserDashboard() {
+        const userDoc = await getDoc(doc(db, "users", currentUser.uid));
+        const balance = userDoc.exists() ? userDoc.data().balance.toFixed(2) : '0.00';
+        contentArea.innerHTML = `
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="bg-white p-6 rounded-xl shadow-md"><h3 class="text-lg font-semibold text-gray-700">Current Balance</h3><p class="text-3xl font-bold theme-text mt-2">$${balance}</p></div>
+                <div class="bg-white p-6 rounded-xl shadow-md"><h3 class="text-lg font-semibold text-gray-700">Total Releases</h3><p id="total-releases" class="text-3xl font-bold text-gray-800 mt-2">Loading...</p></div>
+                <div class="bg-white p-6 rounded-xl shadow-md"><h3 class="text-lg font-semibold text-gray-700">Live on Stores</h3><p id="live-releases" class="text-3xl font-bold text-gray-800 mt-2">Loading...</p></div>
+            </div>
+            <div class="mt-8 bg-white p-6 rounded-xl shadow-md">
+                <h3 class="text-xl font-semibold text-gray-800 mb-4">Recent Releases</h3>
+                <div id="recent-releases-list" class="space-y-4"><p>Loading recent releases...</p></div>
+            </div>`;
+
+        const q = query(collection(db, "releases"), where("userId", "==", currentUser.uid), orderBy("createdAt", "desc"));
+        onSnapshot(q, (querySnapshot) => {
+            const releases = querySnapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
+            document.getElementById('total-releases').textContent = releases.length;
+            document.getElementById('live-releases').textContent = releases.filter(r => r.status === 'delivered').length;
+            const recentList = document.getElementById('recent-releases-list');
+            if (releases.length > 0) {
+                recentList.innerHTML = releases.slice(0, 3).map(release => renderReleaseCard(release, false)).join('');
+            } else {
+                recentList.innerHTML = `<p class="text-gray-500">You haven't created any releases yet.</p>`;
+            }
+        });
+    }
+
+    function renderCreateReleaseForm() {
+        const commonDsps = ['Amazon Music', 'Anghami', 'Apple Music', 'Audiomack', 'Deezer', 'Instagram/Facebook', 'iTunes', 'Pandora', 'SoundCloud', 'Spotify', 'Tidal', 'TikTok', 'YouTube Music'];
+        const eligibleDsps = ['Facebook Fingerprinting', 'YouTube Content ID'];
+        const genres = ['Alternative', 'Blues', 'Classical', 'Country', 'Dance', 'Electronic', 'Hip-Hop/Rap', 'Jazz', 'Pop', 'R&B/Soul', 'Reggae', 'Rock', 'Other'];
+        
+        // MODIFIED: Added many new fields and containers for conditional logic
+        contentArea.innerHTML = `
+        <div class="bg-white p-8 rounded-xl shadow-md max-w-4xl mx-auto">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6">Create New Release</h2>
+            <form id="create-release-form">
+                <fieldset class="mb-8 border p-4 rounded-md">
+                    <legend class="text-lg font-semibold text-gray-700 px-2">1. Upload Files</legend>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-start mt-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Audio File (WAV recommended)</label>
+                            <input type="file" id="audio-file" required class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100">
+                            <div id="audio-upload-progress" class="progress-bar mt-2 h-2.5 hidden"><div class="progress-bar-inner"></div></div>
+                        </div>
+                        <div class="flex flex-col items-center">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Artwork (JPG/PNG, 3000x3000px)</label>
+                            <img id="artwork-preview" class="h-32 w-32 rounded-lg object-cover bg-gray-100 mb-2 hidden" src="#" alt="Artwork Preview">
+                            <input type="file" id="artwork-file" required class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100">
+                            <div id="artwork-upload-progress" class="progress-bar mt-2 h-2.5 w-full hidden"><div class="progress-bar-inner"></div></div>
+                        </div>
+                    </div>
+                    <div class="mt-6">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Supporting Documentation (optional)</label>
+                        <p class="text-xs text-gray-500 mb-2">Upload beat licenses, sample clearances, or cover song licenses here.</p>
+                        <input type="file" id="docs-file" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200">
+                        <div id="docs-upload-progress" class="progress-bar mt-2 h-2.5 hidden"><div class="progress-bar-inner"></div></div>
+                    </div>
+                </fieldset>
+                
+                <fieldset class="mb-8 border p-4 rounded-md">
+                    <legend class="text-lg font-semibold text-gray-700 px-2">2. Release Information</legend>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+                        <div><label class="block text-sm font-medium text-gray-700">Song Title</label><input type="text" id="song-title" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 sm:text-sm"></div>
+                        <div><label class="block text-sm font-medium text-gray-700">Primary Artist</label><input type="text" id="primary-artist" required value="${currentUser.displayName || ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 sm:text-sm"></div>
+                        <div><label class="block text-sm font-medium text-gray-700">Featured Artists (optional)</label><input type="text" id="featured-artists" placeholder="e.g., Artist A, Artist B" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 sm:text-sm"></div>
+                        <div><label class="block text-sm font-medium text-gray-700">Record Label (optional)</label><input type="text" id="record-label" placeholder="Your Label Name" value="${currentUser.displayName || ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 sm:text-sm"></div>
+                        <div><label class="block text-sm font-medium text-gray-700">Release Date</label><input type="date" id="release-date" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 sm:text-sm"></div>
+                        <div><label class="block text-sm font-medium text-gray-700">Genre</label><select id="genre" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 sm:text-sm">${genres.map(g => `<option value="${g}">${g}</option>`).join('')}</select></div>
+                        <div id="other-genre-container" class="hidden md:col-span-2"><label class="block text-sm font-medium text-gray-700">Please specify genre</label><input type="text" id="other-genre-specify" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></div>
+                        <div class="md:col-span-2"><label class="block text-sm font-medium text-gray-700">Has this been released before?</label><div class="flex items-center gap-4 mt-1"><label><input type="radio" name="released-before" value="no" class="mr-1" checked> No</label><label><input type="radio" name="released-before" value="yes" class="mr-1"> Yes</label></div></div>
+                        <div id="original-release-date-container" class="hidden"><label class="block text-sm font-medium text-gray-700">Original Release Date</label><input type="date" id="original-release-date" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></div>
+                        <div><label class="block text-sm font-medium text-gray-700">UPC (optional)</label><input type="text" id="upc" placeholder="Leave blank to generate" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></div>
+                        <div><label class="block text-sm font-medium text-gray-700">ISRC (optional)</label><input type="text" id="isrc" placeholder="Leave blank to generate" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></div>
+                    </div>
+                </fieldset>
+                
+                <fieldset class="mb-8 border p-4 rounded-md">
+                    <legend class="text-lg font-semibold text-gray-700 px-2">3. Artist Profiles</legend>
+                    <p class="text-xs text-gray-500 mt-2">Provide links to existing artist profiles. If you don't have one, we will create it for you.</p>
+                    <div class="space-y-4 mt-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Spotify Artist Profile URL</label>
+                            <div class="flex items-center gap-2"><input type="url" id="spotify-link" required placeholder="https://open.spotify.com/artist/..." class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"><button type="button" onclick="alert('A new artist profile will be created on Spotify.')" class="btn-secondary px-3 py-2 rounded-md text-sm whitespace-nowrap">Create New</button></div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Apple Music Artist Profile URL</label>
+                             <div class="flex items-center gap-2"><input type="url" id="apple-link" required placeholder="https://music.apple.com/us/artist/..." class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"><button type="button" onclick="alert('A new artist profile will be created on Apple Music.')" class="btn-secondary px-3 py-2 rounded-md text-sm whitespace-nowrap">Create New</button></div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">YouTube Music Artist Profile URL</label>
+                             <div class="flex items-center gap-2"><input type="url" id="youtube-link" required placeholder="https://music.youtube.com/channel/..." class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"><button type="button" onclick="alert('A new artist profile will be created on YouTube Music.')" class="btn-secondary px-3 py-2 rounded-md text-sm whitespace-nowrap">Create New</button></div>
+                        </div>
+                    </div>
+                </fieldset>
+
+                <fieldset class="mb-8 border p-4 rounded-md">
+                    <legend class="text-lg font-semibold text-gray-700 px-2">4. Stores & Rights Management</legend>
+                    <div class="mt-4">
+                        <label class="block text-sm font-medium text-gray-700">Select Stores (select all that apply)</label>
+                        <div class="mt-2 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                            ${commonDsps.map(dsp => `<div><label class="flex items-center"><input type="checkbox" name="dsp" value="${dsp}" checked class="rounded border-gray-300 text-purple-600 shadow-sm focus:border-purple-300 focus:ring focus:ring-purple-200 focus:ring-opacity-50"> <span class="ml-2 text-sm">${dsp}</span></label></div>`).join('')}
+                        </div>
+                    </div>
+                    <div class="mt-6">
+                        <label class="block text-sm font-medium text-gray-700">Rights Management</label>
+                        <div class="mt-2 grid grid-cols-1 md:grid-cols-2 gap-2">
+                            ${eligibleDsps.map(dsp => `<div><label class="flex items-center"><input type="checkbox" id="${dsp.toLowerCase().replace(/\s+/g, '-')}" name="right" value="${dsp}" class="rounded border-gray-300 text-purple-600 shadow-sm focus:border-purple-300 focus:ring focus:ring-purple-200 focus:ring-opacity-50"> <span class="ml-2 text-sm">${dsp}</span></label></div>`).join('')}
+                        </div>
+                    </div>
+                     <div id="rights-management-agreement" class="hidden mt-6 p-4 border-l-4 border-red-400 bg-red-50">
+                         <h4 class="font-bold text-red-800">Important Certification Required</h4>
+                         <div class="mt-2 flex items-start">
+                             <input type="checkbox" id="rights-agreement-checkbox" required class="h-4 w-4 mt-1 rounded border-gray-300 text-purple-600 focus:ring-purple-500">
+                             <label for="rights-agreement-checkbox" class="ml-3 block text-sm text-red-700">
+                                 By checking this box, I certify that everything in my song is 100% original, no loops or samples were used, and that I have 100% of the rights to the audio. I understand that if caught uploading fraudulent content, my account will be terminated and I will be responsible for any resulting legal fees.
+                             </label>
+                         </div>
+                     </div>
+                </fieldset>
+
+                <div class="mt-8">
+                    <button type="submit" class="w-full btn-primary font-bold py-3 px-4 rounded-lg">Submit Release for Review</button>
+                </div>
+            </form>
+        </div>`;
+        
+        // NEW: Event listeners for conditional form logic
+        document.getElementById('create-release-form').addEventListener('submit', handleCreateRelease);
+        document.getElementById('artwork-file').addEventListener('change', (e) => {
+            const preview = document.getElementById('artwork-preview');
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    preview.src = event.target.result;
+                    preview.classList.remove('hidden');
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Genre -> Other
+        document.getElementById('genre').addEventListener('change', (e) => {
+            const isOther = e.target.value === 'Other';
+            document.getElementById('other-genre-container').classList.toggle('hidden', !isOther);
+            document.getElementById('other-genre-specify').required = isOther;
+        });
+        
+        // Released Before -> Original Date
+        document.querySelectorAll('input[name="released-before"]').forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                const needsDate = e.target.value === 'yes';
+                document.getElementById('original-release-date-container').classList.toggle('hidden', !needsDate);
+                document.getElementById('original-release-date').required = needsDate;
+            });
+        });
+        
+        // Rights Management -> Agreement Checkbox
+        const toggleRightsAgreement = () => {
+            const fbChecked = document.getElementById('facebook-fingerprinting').checked;
+            const ytChecked = document.getElementById('youtube-content-id').checked;
+            const needsAgreement = fbChecked || ytChecked;
+            document.getElementById('rights-management-agreement').classList.toggle('hidden', !needsAgreement);
+            document.getElementById('rights-agreement-checkbox').required = needsAgreement;
+        };
+        document.getElementById('facebook-fingerprinting').addEventListener('change', toggleRightsAgreement);
+        document.getElementById('youtube-content-id').addEventListener('change', toggleRightsAgreement);
+    }
+    
+    function renderMyReleases() {
+        contentArea.innerHTML = `
+            <div class="bg-white p-6 rounded-xl shadow-md">
+                <h3 class="text-xl font-semibold text-gray-800 mb-4">All My Releases</h3>
+                <div id="my-releases-list" class="space-y-4"><p>Loading your releases...</p></div>
+            </div>`;
+            
+        const q = query(collection(db, "releases"), where("userId", "==", currentUser.uid), orderBy("createdAt", "desc"));
+        onSnapshot(q, (querySnapshot) => {
+            const releases = querySnapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
+            const releasesHtml = releases.length === 0
+                ? `<p class="text-gray-500">You haven't submitted any releases yet.</p>`
+                : releases.map(release => renderReleaseCard(release, true)).join('');
+            document.getElementById('my-releases-list').innerHTML = releasesHtml;
+        });
+    }
+
+    async function renderReleaseDetails(releaseId) {
+        contentArea.innerHTML = `<p>Loading release details...</p>`;
+        const releaseDoc = await getDoc(doc(db, "releases", releaseId));
+        if (!releaseDoc.exists()) {
+            contentArea.innerHTML = `<p>Release not found.</p>`;
+            return;
+        }
+        const release = releaseDoc.data();
+        contentArea.innerHTML = `
+            <div class="bg-white p-8 rounded-xl shadow-md">
+                <div class="flex flex-col md:flex-row gap-8">
+                    <img src="${release.artworkUrl}" alt="Artwork" class="w-full md:w-64 h-auto md:h-64 rounded-xl object-cover shadow-lg">
+                    <div class="flex-1">
+                        <h2 class="text-3xl font-bold text-gray-900">${release.songTitle}</h2>
+                        <p class="text-xl text-gray-600 mt-1">${release.primaryArtist}</p>
+                        <div class="mt-4 pt-4 border-t">
+                            <p class="text-sm text-gray-500"><strong>Status:</strong> <span class="font-semibold">${release.status}</span></p>
+                            <p class="text-sm text-gray-500"><strong>Release Date:</strong> ${release.releaseDate}</p>
+                            <p class="text-sm text-gray-500"><strong>Genre:</strong> ${release.genre}</p>
+                            <p class="text-sm text-gray-500"><strong>Record Label:</strong> ${release.recordLabel}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+    }
+
+    function renderAnalytics() {
+        contentArea.innerHTML = `<div class="bg-white p-8 rounded-xl shadow-md text-center"><h2 class="text-2xl font-bold text-gray-800">📊 Analytics</h2><p class="mt-2 text-gray-600">Detailed stream and download analytics are coming soon!</p></div>`;
+    }
+    
+    // MODIFIED: Reworked payouts to check for payment info and show history
+    function renderPayouts() {
+        contentArea.innerHTML = `<div class="bg-white p-8 rounded-xl shadow-md max-w-2xl mx-auto text-center" id="payouts-container">Loading payout information...</div>`;
+        const userRef = doc(db, "users", currentUser.uid);
+
+        onSnapshot(userRef, async (userDoc) => {
+            const container = document.getElementById('payouts-container');
+            if (!container) return;
+            const userData = userDoc.exists() ? userDoc.data() : { balance: 0 };
+            const balance = userData.balance || 0;
+
+            if (!userData.payoutMethod) {
+                container.innerHTML = `
+                    <h2 class="text-2xl font-bold text-gray-800 mb-4">Payouts</h2>
+                    <div class="p-4 text-sm text-red-800 rounded-lg bg-red-100" role="alert">
+                        You must set up a payout method before you can request your earnings.
+                    </div>
+                    <button onclick="navigateTo('account-settings')" class="mt-6 btn-primary py-2 px-4 rounded-md">Go to Account Settings</button>`;
+                return;
+            }
+
+            const payoutsQuery = query(collection(db, "payouts"), where("userId", "==", currentUser.uid), orderBy("requestedAt", "desc"));
+            const payoutsSnapshot = await getDocs(payoutsQuery);
+            const hasPendingRequest = payoutsSnapshot.docs.some(d => d.data().status === 'pending');
+            const payouts = payoutsSnapshot.docs.map(doc => doc.data());
+
+            let historyHtml = '<p class="text-gray-500">No payout history.</p>';
+            if (payouts.length > 0) {
+                historyHtml = payouts.map(p => {
+                    let statusHtml = '';
+                    switch (p.status) {
+                        case 'pending': statusHtml = `<span class="text-yellow-800 bg-yellow-100">Pending</span>`; break;
+                        case 'approved': statusHtml = `<span class="text-green-800 bg-green-100">Approved</span>`; break;
+                        case 'rejected': statusHtml = `<span class="text-red-800 bg-red-100">Rejected</span>`; break;
+                    }
+                    let reasonHtml = p.status === 'rejected' ? `<p class="text-xs text-red-600 mt-1">Reason: ${p.rejectionReason}</p>` : '';
+                     let approvedMsg = p.status === 'approved' ? `<p class="text-xs text-green-600 mt-1">Payment will arrive in 1-7 business days.</p>` : '';
+
+                    return `<div class="p-3 border rounded-md text-left">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <p class="font-semibold">$${p.amount.toFixed(2)}</p>
+                                <p class="text-xs text-gray-500">${new Date(p.requestedAt.seconds * 1000).toLocaleDateString()}</p>
+                            </div>
+                            <span class="text-xs font-medium px-2.5 py-0.5 rounded-full">${statusHtml}</span>
+                        </div>
+                        ${reasonHtml}
+                        ${approvedMsg}
+                    </div>`;
+                }).join('');
+            }
+
+            container.innerHTML = `
+                <h2 class="text-2xl font-bold text-gray-800 mb-2">Your Earnings</h2>
+                <p class="text-5xl font-bold theme-text mb-6">$${balance.toFixed(2)}</p>
+                <button id="request-payout-btn" class="w-full btn-primary py-3 px-4 rounded-lg font-bold" ${balance <= 0 || hasPendingRequest ? 'disabled' : ''}>
+                    ${hasPendingRequest ? 'Payout Request Pending' : 'Request Payout'}
+                </button>
+                <div class="mt-8 text-left">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">Payout History</h3>
+                    <div class="space-y-3">${historyHtml}</div>
+                </div>`;
+            
+            if (balance > 0 && !hasPendingRequest) {
+                document.getElementById('request-payout-btn').addEventListener('click', () => handleRequestPayout(balance));
+            }
+        });
+    }
+
+    function renderAdminReleases() {
+        contentArea.innerHTML = `
+            <div class="bg-white p-6 rounded-xl shadow-md">
+                <h3 class="text-xl font-semibold text-gray-800 mb-4">All Releases</h3>
+                <div id="admin-releases-list" class="space-y-4"><p>Loading all releases...</p></div>
+            </div>`;
+        const q = query(collection(db, "releases"), orderBy("createdAt", "desc"));
+        onSnapshot(q, (querySnapshot) => {
+            const releases = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            const listEl = document.getElementById('admin-releases-list');
+            if(!listEl) return;
+            listEl.innerHTML = releases.length > 0 ? releases.map(renderAdminReleaseCard).join('') : `<p>No releases found.</p>`;
+        });
+    }
+
+    function renderAdminUsers() {
+        contentArea.innerHTML = `
+            <div class="bg-white p-6 rounded-xl shadow-md mb-8">
+                <h3 class="text-xl font-semibold text-gray-800 mb-4">Manage User Balances</h3>
+                <div id="admin-users-list" class="space-y-4"><p>Loading users...</p></div>
+            </div>`;
+
+        const usersQuery = query(collection(db, "users"), orderBy("name", "asc"));
+        onSnapshot(usersQuery, (snapshot) => {
+            const users = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            const listEl = document.getElementById('admin-users-list');
+            if(!listEl) return;
+            listEl.innerHTML = users.length > 0 ? users.map(user => `
+                <div class="p-4 border rounded-lg flex flex-col md:flex-row items-center justify-between">
+                    <div>
+                        <p class="font-semibold text-gray-800">${user.name}</p>
+                        <p class="text-sm text-gray-500">${user.email}</p>
+                    </div>
+                    <div class="flex items-center gap-4 mt-4 md:mt-0">
+                        <span class="font-bold text-lg theme-text">$${(user.balance || 0).toFixed(2)}</span>
+                        <form onsubmit="handleBalanceUpdate(event, '${user.id}')" class="flex items-center gap-2">
+                            <input type="number" name="amount" step="0.01" required placeholder="Amount" class="w-24 text-sm rounded-md border-gray-300 shadow-sm">
+                            <button type="submit" name="action" value="add" class="bg-blue-500 text-white text-xs px-2 py-1 rounded-md hover:bg-blue-600">Add</button>
+                            <button type="submit" name="action" value="subtract" class="bg-red-500 text-white text-xs px-2 py-1 rounded-md hover:bg-red-600">Subtract</button>
+                        </form>
+                    </div>
+                </div>`).join('') : `<p>No users found.</p>`;
+        });
+    }
+    
+    // --- Event Handlers & API Calls ---
+
+    // NEW: Function to save payment information
+    async function handleSavePaymentInfo(e) {
+        e.preventDefault();
+        showLoading(true);
+        const method = e.target.querySelector('input[name="payoutMethod"]:checked').value;
+        const updateData = { payoutMethod: method };
+
+        if (method === 'paypal') {
+            updateData.paypalEmail = document.getElementById('paypalEmail').value;
+        } else {
+            updateData.legalName = document.getElementById('legalName').value;
+            updateData.mailingAddress = document.getElementById('mailingAddress').value;
+        }
+
+        try {
+            await updateDoc(doc(db, "users", currentUser.uid), updateData);
+            showToast('Payout information saved successfully!', 'success');
+            renderAccountSettings(); // Re-render the view to show the saved info
+        } catch (error) {
+            console.error("Error saving payment info:", error);
+            showToast('Failed to save payout information.', 'error');
+        } finally {
+            showLoading(false);
+        }
+    }
+
+    // MODIFIED: handleCreateRelease to include all new form fields
+    window.handleCreateRelease = async (e) => {
+        e.preventDefault();
+        showLoading(true);
+        try {
+            const audioFile = document.getElementById('audio-file').files[0];
+            const artworkFile = document.getElementById('artwork-file').files[0];
+            const docsFile = document.getElementById('docs-file').files[0]; // New docs file
+
+            if (!audioFile || !artworkFile) {
+                showToast('Please select both an audio and artwork file.', 'error');
+                showLoading(false);
+                return;
+            }
+
+            const uploadPromises = [
+                uploadToCloudinary(audioFile, 'audio-upload-progress'),
+                uploadToCloudinary(artworkFile, 'artwork-upload-progress')
+            ];
+            if (docsFile) {
+                uploadPromises.push(uploadToCloudinary(docsFile, 'docs-upload-progress'));
+            }
+
+            const [audioUrl, artworkUrl, docsUrl] = await Promise.all(uploadPromises);
+
+            if (!audioUrl || !artworkUrl) {
+                showToast('File upload failed. Please try again.', 'error');
+                showLoading(false);
+                return;
+            }
+            
+            const genreSelect = document.getElementById('genre');
+            const releaseData = {
+                userId: currentUser.uid,
+                userName: currentUser.displayName,
+                songTitle: document.getElementById('song-title').value,
+                primaryArtist: document.getElementById('primary-artist').value,
+                featuredArtists: document.getElementById('featured-artists').value,
+                releaseDate: document.getElementById('release-date').value,
+                genre: genreSelect.value === 'Other' ? document.getElementById('other-genre-specify').value : genreSelect.value,
+                recordLabel: document.getElementById('record-label').value,
+                previouslyReleased: document.querySelector('input[name="released-before"]:checked').value === 'yes',
+                originalReleaseDate: document.querySelector('input[name="released-before"]:checked').value === 'yes' ? document.getElementById('original-release-date').value : null,
+                upc: document.getElementById('upc').value,
+                isrc: document.getElementById('isrc').value,
+                spotifyLink: document.getElementById('spotify-link').value,
+                appleLink: document.getElementById('apple-link').value,
+                youtubeLink: document.getElementById('youtube-link').value,
+                stores: Array.from(document.querySelectorAll('input[name="dsp"]:checked')).map(el => el.value),
+                rights: Array.from(document.querySelectorAll('input[name="right"]:checked')).map(el => el.value),
+                audioUrl,
+                artworkUrl,
+                docsUrl: docsUrl || null,
+                status: 'pending',
+                createdAt: serverTimestamp()
+            };
+
+            await addDoc(collection(db, "releases"), releaseData);
+            showToast('Release submitted successfully for review!', 'success');
+            navigateTo('my-releases');
+
+        } catch (error) {
+            console.error("Error creating release:", error);
+            showToast(`Error: ${error.message}`, 'error');
+        } finally {
+            showLoading(false);
+        }
+    };
+    
+    async function handleRequestPayout(balance) {
+        if (balance <= 0) {
+            showToast("You have no balance to withdraw.", 'error');
+            return;
+        }
+        if (confirm(`You are about to request a payout for your entire balance of $${balance.toFixed(2)}. Do you want to continue?`)) {
+            showLoading(true);
+            try {
+                await addDoc(collection(db, "payouts"), {
+                    userId: currentUser.uid,
+                    userName: currentUser.displayName,
+                    userEmail: currentUser.email,
+                    amount: balance,
+                    status: 'pending',
+                    requestedAt: serverTimestamp()
+                });
+                showToast('Payout request submitted successfully!', 'success');
+                renderPayouts();
+            } catch (error) {
+                console.error("Payout request error:", error);
+                showToast('Failed to submit payout request.', 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+    }
+
+    window.handleDeleteRelease = async (releaseId) => {
+        if (confirm('Are you sure you want to delete this release? This action cannot be undone.')) {
+            showLoading(true);
+            try {
+                await deleteDoc(doc(db, "releases", releaseId));
+                showToast('Release deleted successfully.', 'success');
+            } catch (error) {
+                console.error("Error deleting release:", error);
+                showToast('Failed to delete release.', 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+    };
+    
+    window.handleReleaseStatusUpdate = async (releaseId, newStatus) => {
+        const confirmMsg = newStatus === 'taken down' ? 'Are you sure you want to request a takedown for this release?' : `Are you sure you want to update status to '${newStatus}'?`;
+        if (confirm(confirmMsg)) {
+            showLoading(true);
+            try {
+                await updateDoc(doc(db, "releases", releaseId), { status: newStatus });
+                showToast(`Release status updated to '${newStatus}'.`, 'success');
+            } catch (error) {
+                console.error("Status update error:", error);
+                showToast('Failed to update status.', 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+    };
+    
+    window.handleBalanceUpdate = async (e, userId) => {
+        e.preventDefault();
+        const form = e.target;
+        const amount = parseFloat(form.elements.amount.value);
+        const action = e.submitter.value;
+        const amountToUpdate = action === 'add' ? amount : -amount;
+
+        if (isNaN(amount) || amount <= 0) {
+            showToast('Please enter a valid positive amount.', 'error');
+            return;
+        }
+        showLoading(true);
+        try {
+            await updateDoc(doc(db, "users", userId), { balance: increment(amountToUpdate) });
+            showToast(`Balance updated successfully for user.`, 'success');
+            form.reset();
+        } catch (error) {
+            console.error("Balance update error:", error);
+            showToast('Failed to update balance.', 'error');
+        } finally {
+            showLoading(false);
+        }
+    };
+    
+    // NEW: Reworked payout handling for Admins
+    window.handlePayoutAction = async (payoutId, action, userId, amount) => {
+        if (action === 'approve') {
+            if (confirm('Are you sure you want to approve this payout? This will deduct the balance from the user account.')) {
+                showLoading(true);
+                try {
+                    const userRef = doc(db, "users", userId);
+                    const userDoc = await getDoc(userRef);
+                    if (userDoc.exists() && userDoc.data().balance >= amount) {
+                        await updateDoc(userRef, { balance: increment(-amount) });
+                        await updateDoc(doc(db, "payouts", payoutId), { status: 'approved' });
+                        showToast('Payout approved and user balance updated.', 'success');
+                    } else {
+                        showToast('User has insufficient funds. Reject the payout.', 'error');
+                    }
+                } catch (error) {
+                    console.error("Error approving payout:", error);
+                    showToast('Failed to approve payout.', 'error');
+                } finally {
+                    showLoading(false);
+                }
+            }
+        } else if (action === 'reject') {
+            const reason = prompt('Please provide a reason for rejecting this payout request:');
+            if (reason) {
+                showLoading(true);
+                try {
+                    await updateDoc(doc(db, "payouts", payoutId), { status: 'rejected', rejectionReason: reason });
+                    showToast('Payout rejected.', 'success');
+                } catch (error) {
+                    console.error("Error rejecting payout:", error);
+                    showToast('Failed to reject payout.', 'error');
+                } finally {
+                    showLoading(false);
+                }
+            }
+        }
+    };
+    
+    // NEW: Function to open the read-only release details modal
+    window.handleViewReleaseDetails = async (releaseId) => {
+        const releaseDoc = await getDoc(doc(db, "releases", releaseId));
+        if (releaseDoc.exists()) {
+            const data = releaseDoc.data();
+            document.getElementById('view-songTitle').value = data.songTitle || '';
+            document.getElementById('view-primaryArtist').value = data.primaryArtist || '';
+            document.getElementById('view-featuredArtists').value = data.featuredArtists || '';
+            document.getElementById('view-releaseDate').value = data.releaseDate || '';
+            document.getElementById('view-genre').value = data.genre || '';
+            document.getElementById('view-recordLabel').value = data.recordLabel || '';
+            document.getElementById('view-upc').value = data.upc || 'Auto-generated';
+            document.getElementById('view-isrc').value = data.isrc || 'Auto-generated';
+            document.getElementById('view-spotifyLink').value = data.spotifyLink || '';
+            document.getElementById('view-appleLink').value = data.appleLink || '';
+            document.getElementById('view-youtubeLink').value = data.youtubeLink || '';
+            document.getElementById('release-details-modal').style.display = 'block';
+        } else {
+            showToast('Could not find release details.', 'error');
+        }
+    };
+
+    // --- Helper & Utility Functions ---
+    function showLoading(show) { loadingOverlay.classList.toggle('hidden', !show); }
+    function showToast(message, type = 'success') {
+        toastMessage.textContent = message;
+        toast.className = `fixed top-5 right-5 text-white py-2 px-4 rounded-lg shadow-lg transition-opacity duration-300 ${type === 'error' ? 'bg-red-500' : 'bg-green-500'}`;
+        toast.classList.remove('hidden');
+        setTimeout(() => toast.classList.add('hidden'), 4000);
+    }
+
+    async function uploadToCloudinary(file, progressElementId) {
+        return new Promise((resolve, reject) => {
+            if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_UPLOAD_PRESET) {
+                console.error("Cloudinary config missing.");
+                reject("Cloudinary not configured.");
+                return;
+            }
+            const progressBarContainer = document.getElementById(progressElementId);
+            const progressBarInner = progressBarContainer.querySelector('.progress-bar-inner');
+            progressBarContainer.classList.remove('hidden');
+            progressBarInner.style.width = '0%';
+            progressBarInner.style.backgroundColor = '#5a4ae3';
+
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/upload`, true);
+            xhr.upload.onprogress = (event) => {
+                if (event.lengthComputable) {
+                    const percentComplete = (event.loaded / event.total) * 100;
+                    progressBarInner.style.width = `${percentComplete}%`;
+                }
+            };
+            xhr.onload = () => {
+                if (xhr.status === 200) {
+                    const response = JSON.parse(xhr.responseText);
+                    progressBarInner.style.backgroundColor = '#22c55e'; // Green on success
+                    resolve(response.secure_url);
+                } else {
+                    progressBarInner.style.backgroundColor = '#ef4444'; // Red on error
+                    reject(`Upload failed: ${xhr.statusText}`);
+                }
+            };
+            xhr.onerror = () => {
+                progressBarInner.style.backgroundColor = '#ef4444';
+                reject('Network error');
+            };
+            xhr.send(formData);
+        });
+    }
+
+    function renderReleaseCard(release, showDelete) {
+        const statusColors = { pending: 'bg-yellow-100 text-yellow-800', approved: 'bg-blue-100 text-blue-800', delivered: 'bg-green-100 text-green-800', rejected: 'bg-red-100 text-red-800', 'taken down': 'bg-gray-100 text-gray-800' };
+        const canDelete = showDelete && (release.status === 'pending' || release.status === 'rejected');
+        // NEW: Show "View" button for approved/delivered releases
+        const canView = ['approved', 'delivered', 'taken down'].includes(release.status);
+        
+        return `
+        <div class="p-4 border rounded-lg bg-white shadow-sm flex flex-col md:flex-row items-start md:items-center gap-4">
+            <div class="flex items-center gap-4 flex-1">
+                <img src="${release.artworkUrl}" alt="Artwork" class="w-12 h-12 rounded-md object-cover">
+                <div>
+                    <p class="font-semibold text-gray-800">${release.songTitle}</p>
+                    <p class="text-sm text-gray-500">${release.primaryArtist} &bull; Release: ${release.releaseDate}</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-4 mt-2 md:mt-0">
+                <span class="text-xs font-medium px-2.5 py-0.5 rounded-full ${statusColors[release.status] || ''}">${release.status}</span>
+                ${canView ? `<button onclick="handleViewReleaseDetails('${release.id}')" class="text-sm btn-secondary py-1 px-3 rounded-md">View</button>` : ''}
+                ${canDelete ? `<button onclick="event.stopPropagation(); window.handleDeleteRelease('${release.id}')" class="text-gray-400 hover:text-red-500" title="Delete Release"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>` : ''}
+            </div>
+        </div>`;
+    }
+    
+    function renderAdminReleaseCard(release) {
+        let actionsHtml = '';
+        switch (release.status) {
+            case 'pending':
+                actionsHtml = `
+                    <button onclick="window.handleReleaseStatusUpdate('${release.id}', 'approved')" class="bg-blue-500 hover:bg-blue-600 text-white text-sm font-bold py-1 px-3 rounded-lg">Approve</button>
+                    <button onclick="window.handleReleaseStatusUpdate('${release.id}', 'rejected')" class="bg-red-500 hover:bg-red-600 text-white text-sm font-bold py-1 px-3 rounded-lg">Reject</button>`;
+                break;
+            case 'approved':
+                actionsHtml = `
+                    <button onclick="window.handleReleaseStatusUpdate('${release.id}', 'delivered')" class="bg-green-500 hover:bg-green-600 text-white text-sm font-bold py-1 px-3 rounded-lg">Mark Delivered</button>
+                    <button onclick="window.handleReleaseStatusUpdate('${release.id}', 'taken down')" class="bg-gray-500 hover:bg-gray-600 text-white text-sm font-bold py-1 px-3 rounded-lg">Take Down</button>`;
+                break;
+            case 'delivered':
+                actionsHtml = `<button onclick="window.handleReleaseStatusUpdate('${release.id}', 'taken down')" class="bg-gray-500 hover:bg-gray-600 text-white text-sm font-bold py-1 px-3 rounded-lg">Take Down</button>`;
+                break;
+            default:
+                actionsHtml = `<p class="text-xs text-gray-500">No actions available.</p>`;
+        }
+        const statusColors = { pending: 'border-yellow-400', approved: 'border-blue-400', delivered: 'border-green-400', rejected: 'border-red-400', 'taken down': 'border-gray-300' };
+        return `
+            <div class="p-4 border-l-4 ${statusColors[release.status]} rounded-lg bg-gray-50 shadow-sm">
+                <div class="flex flex-col md:flex-row justify-between md:items-center">
+                    <div>
+                        <p class="font-bold text-gray-800">${release.songTitle} <span class="font-normal text-gray-600">by ${release.primaryArtist}</span></p>
+                        <p class="text-sm text-gray-500">Submitted by: ${release.userName} &bull; Date: ${new Date(release.createdAt.seconds * 1000).toLocaleDateString()}</p>
+                    </div>
+                    <div class="flex items-center gap-2 mt-4 md:mt-0">${actionsHtml}</div>
+                </div>
+            </div>`;
+    }
+
+    // --- Initial Event Listeners ---
+    document.getElementById('show-signup').addEventListener('click', (e) => {
+        e.preventDefault();
+        document.getElementById('login-form').classList.add('hidden');
+        document.getElementById('signup-form').classList.remove('hidden');
+    });
+    document.getElementById('show-login').addEventListener('click', (e) => {
+        e.preventDefault();
+        document.getElementById('signup-form').classList.add('hidden');
+        document.getElementById('login-form').classList.remove('hidden');
+    });
+    document.getElementById('mobile-menu-button').addEventListener('click', () => {
+        document.getElementById('mobile-menu').classList.remove('hidden');
+    });
+    document.getElementById('mobile-menu-close').addEventListener('click', () => {
+        document.getElementById('mobile-menu').classList.add('hidden');
+    });
+    document.getElementById('mobile-menu-overlay').addEventListener('click', () => {
+        document.getElementById('mobile-menu').classList.add('hidden');
+    });
+</script>
+</body>
+</html>
