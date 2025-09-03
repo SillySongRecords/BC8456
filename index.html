@@ -1,3 +1,10 @@
+Of course. It appears the user payout tab is likely getting stuck because of a database query that fails if a specific index isn't set up in Firestore. This can happen when you filter by one field (`userId`) and sort by another (`requestedAt`).
+
+I will adjust the code to perform the sorting on the client-side after fetching the data. This avoids the need for a special database index and makes the code more resilient. I'll also add error handling to prevent the page from getting stuck and fix a minor HTML bug in the process.
+
+Here is the updated code with the bug fix:
+
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -148,7 +155,7 @@
     <div class="modal-content">
         <div class="modal-header">
             <h2 class="text-xl font-bold text-gray-800">Release Metadata</h2>
-            <span class="modal-close" onclick="document.getElementById('release-details-modal').style.display='none'">&times;</span>
+            <span class="modal-close" onclick="document.getElementById('release-details-modal').style.display='none'">×</span>
         </div>
         <div class="mt-4">
             <div class="p-3 mb-4 text-sm text-blue-800 rounded-lg bg-blue-100" role="alert">
@@ -745,63 +752,80 @@
         onSnapshot(userRef, async (userDoc) => {
             const container = document.getElementById('payouts-container');
             if (!container) return;
-            const userData = userDoc.exists() ? userDoc.data() : { balance: 0 };
-            const balance = userData.balance || 0;
 
-            if (!userData.payoutMethod) {
-                container.innerHTML = `
-                    <h2 class="text-2xl font-bold text-gray-800 mb-4">Payouts</h2>
-                    <div class="p-4 text-sm text-red-800 rounded-lg bg-red-100" role="alert">
-                        You must set up a payout method before you can request your earnings.
-                    </div>
-                    <button onclick="navigateTo('account-settings')" class="mt-6 btn-primary py-2 px-4 rounded-md">Go to Account Settings</button>`;
-                return;
-            }
+            try {
+                const userData = userDoc.exists() ? userDoc.data() : { balance: 0 };
+                const balance = userData.balance || 0;
 
-            const payoutsQuery = query(collection(db, "payouts"), where("userId", "==", currentUser.uid), orderBy("requestedAt", "desc"));
-            const payoutsSnapshot = await getDocs(payoutsQuery);
-            const hasPendingRequest = payoutsSnapshot.docs.some(d => d.data().status === 'pending');
-            const payouts = payoutsSnapshot.docs.map(doc => doc.data());
-
-            let historyHtml = '<p class="text-gray-500">No payout history.</p>';
-            if (payouts.length > 0) {
-                historyHtml = payouts.map(p => {
-                    let statusHtml = '';
-                    switch (p.status) {
-                        case 'pending': statusHtml = `<span class="text-yellow-800 bg-yellow-100">Pending</span>`; break;
-                        case 'approved': statusHtml = `<span class="text-green-800 bg-green-100">Approved</span>`; break;
-                        case 'rejected': statusHtml = `<span class="text-red-800 bg-red-100">Rejected</span>`; break;
-                    }
-                    let reasonHtml = p.status === 'rejected' ? `<p class="text-xs text-red-600 mt-1">Reason: ${p.rejectionReason}</p>` : '';
-                     let approvedMsg = p.status === 'approved' ? `<p class="text-xs text-green-600 mt-1">Payment will arrive in 1-7 business days.</p>` : '';
-
-                    return `<div class="p-3 border rounded-md text-left">
-                        <div class="flex justify-between items-center">
-                            <div>
-                                <p class="font-semibold">$${p.amount.toFixed(2)}</p>
-                                <p class="text-xs text-gray-500">${new Date(p.requestedAt.seconds * 1000).toLocaleDateString()}</p>
-                            </div>
-                            <span class="text-xs font-medium px-2.5 py-0.5 rounded-full">${statusHtml}</span>
+                if (!userData.payoutMethod) {
+                    container.innerHTML = `
+                        <h2 class="text-2xl font-bold text-gray-800 mb-4">Payouts</h2>
+                        <div class="p-4 text-sm text-red-800 rounded-lg bg-red-100" role="alert">
+                            You must set up a payout method before you can request your earnings.
                         </div>
-                        ${reasonHtml}
-                        ${approvedMsg}
-                    </div>`;
-                }).join('');
-            }
+                        <button onclick="navigateTo('account-settings')" class="mt-6 btn-primary py-2 px-4 rounded-md">Go to Account Settings</button>`;
+                    return;
+                }
 
-            container.innerHTML = `
-                <h2 class="text-2xl font-bold text-gray-800 mb-2">Your Earnings</h2>
-                <p class="text-5xl font-bold theme-text mb-6">$${balance.toFixed(2)}</p>
-                <button id="request-payout-btn" class="w-full btn-primary py-3 px-4 rounded-lg font-bold" ${balance <= 0 || hasPendingRequest ? 'disabled' : ''}>
-                    ${hasPendingRequest ? 'Payout Request Pending' : 'Request Payout'}
-                </button>
-                <div class="mt-8 text-left">
-                    <h3 class="text-xl font-semibold text-gray-800 mb-4">Payout History</h3>
-                    <div class="space-y-3">${historyHtml}</div>
-                </div>`;
-            
-            if (balance > 0 && !hasPendingRequest) {
-                document.getElementById('request-payout-btn').addEventListener('click', () => handleRequestPayout(balance));
+                const payoutsQuery = query(collection(db, "payouts"), where("userId", "==", currentUser.uid));
+                const payoutsSnapshot = await getDocs(payoutsQuery);
+                const hasPendingRequest = payoutsSnapshot.docs.some(d => d.data().status === 'pending');
+
+                const payouts = payoutsSnapshot.docs
+                    .map(doc => doc.data())
+                    .sort((a, b) => {
+                        if (a.requestedAt && b.requestedAt) {
+                            return b.requestedAt.seconds - a.requestedAt.seconds;
+                        }
+                        return 0;
+                    });
+
+                let historyHtml = '<p class="text-gray-500">No payout history.</p>';
+                if (payouts.length > 0) {
+                    historyHtml = payouts.map(p => {
+                        let statusHtml = '';
+                        switch (p.status) {
+                            case 'pending': statusHtml = `<span class="text-xs font-medium px-2.5 py-0.5 rounded-full text-yellow-800 bg-yellow-100">Pending</span>`; break;
+                            case 'approved': statusHtml = `<span class="text-xs font-medium px-2.5 py-0.5 rounded-full text-green-800 bg-green-100">Approved</span>`; break;
+                            case 'rejected': statusHtml = `<span class="text-xs font-medium px-2.5 py-0.5 rounded-full text-red-800 bg-red-100">Rejected</span>`; break;
+                            default: statusHtml = `<span class="text-xs font-medium px-2.5 py-0.5 rounded-full text-gray-800 bg-gray-100">${p.status || 'unknown'}</span>`; break;
+                        }
+                        let reasonHtml = p.status === 'rejected' ? `<p class="text-xs text-red-600 mt-1">Reason: ${p.rejectionReason}</p>` : '';
+                        let approvedMsg = p.status === 'approved' ? `<p class="text-xs text-green-600 mt-1">Payment will arrive in 1-7 business days.</p>` : '';
+
+                        return `<div class="p-3 border rounded-md text-left">
+                            <div class="flex justify-between items-center">
+                                <div>
+                                    <p class="font-semibold">$${p.amount.toFixed(2)}</p>
+                                    <p class="text-xs text-gray-500">${p.requestedAt ? new Date(p.requestedAt.seconds * 1000).toLocaleDateString() : 'Date N/A'}</p>
+                                </div>
+                                ${statusHtml}
+                            </div>
+                            ${reasonHtml}
+                            ${approvedMsg}
+                        </div>`;
+                    }).join('');
+                }
+
+                container.innerHTML = `
+                    <h2 class="text-2xl font-bold text-gray-800 mb-2">Your Earnings</h2>
+                    <p class="text-5xl font-bold theme-text mb-6">$${balance.toFixed(2)}</p>
+                    <button id="request-payout-btn" class="w-full btn-primary py-3 px-4 rounded-lg font-bold" ${balance <= 0 || hasPendingRequest ? 'disabled' : ''}>
+                        ${hasPendingRequest ? 'Payout Request Pending' : 'Request Payout'}
+                    </button>
+                    <div class="mt-8 text-left">
+                        <h3 class="text-xl font-semibold text-gray-800 mb-4">Payout History</h3>
+                        <div class="space-y-3">${historyHtml}</div>
+                    </div>`;
+                
+                if (balance > 0 && !hasPendingRequest) {
+                    document.getElementById('request-payout-btn').addEventListener('click', () => handleRequestPayout(balance));
+                }
+            } catch (error) {
+                console.error("Error rendering payouts:", error);
+                if (container) {
+                    container.innerHTML = `<div class="p-4 text-sm text-red-800 rounded-lg bg-red-100" role="alert">An error occurred while loading your payout information. Please try again later.</div>`;
+                }
             }
         });
     }
@@ -1155,7 +1179,7 @@
                 <img src="${release.artworkUrl}" alt="Artwork" class="w-12 h-12 rounded-md object-cover">
                 <div>
                     <p class="font-semibold text-gray-800">${release.songTitle}</p>
-                    <p class="text-sm text-gray-500">${release.primaryArtist} &bull; Release: ${release.releaseDate}</p>
+                    <p class="text-sm text-gray-500">${release.primaryArtist} • Release: ${release.releaseDate}</p>
                 </div>
             </div>
             <div class="flex items-center gap-4 mt-2 md:mt-0">
@@ -1191,7 +1215,7 @@
                 <div class="flex flex-col md:flex-row justify-between md:items-center">
                     <div>
                         <p class="font-bold text-gray-800">${release.songTitle} <span class="font-normal text-gray-600">by ${release.primaryArtist}</span></p>
-                        <p class="text-sm text-gray-500">Submitted by: ${release.userName} &bull; Date: ${new Date(release.createdAt.seconds * 1000).toLocaleDateString()}</p>
+                        <p class="text-sm text-gray-500">Submitted by: ${release.userName} • Date: ${new Date(release.createdAt.seconds * 1000).toLocaleDateString()}</p>
                     </div>
                     <div class="flex items-center gap-2 mt-4 md:mt-0">${actionsHtml}</div>
                 </div>
@@ -1221,3 +1245,4 @@
 </script>
 </body>
 </html>
+```
